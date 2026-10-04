@@ -326,10 +326,10 @@ public final class GatePart extends Part {
         long time = owner.getLevel() == null ? 0 : owner.getLevel().getGameTime();
 
         if (scheduledAt == 0) {
-            // This marker is set by interactions/config edits between BE
-            // ticks. One tick has elapsed by the time it is consumed here,
-            // so +1 preserves ProjectRed's 2-tick delay from the action.
-            scheduledAt = time + 1;
+            // Interactions/config edits use zero as an owner-less scheduling
+            // marker. Signal propagation can now evaluate this gate in the
+            // same server tick, so preserve ProjectRed's full 2-tick delay.
+            scheduledAt = time + 2;
         }
 
         if (scheduledAt >= 0 && time >= scheduledAt) {
