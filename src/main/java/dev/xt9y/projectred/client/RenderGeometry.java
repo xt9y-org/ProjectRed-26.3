@@ -63,12 +63,100 @@ final class RenderGeometry {
         }
     }
 
+    static void gateSurface(
+            VertexConsumer c,
+            PoseStack.Pose pose,
+            int light,
+            Direction attachment,
+            int rotation
+    ) {
+        // Slightly raised to prevent z-fighting with the base.
+        float lo = .0625F;
+        float hi = .9375F;
+        float d = .126F;
+
+        switch (attachment) {
+            case DOWN -> orientedQuad(c, pose, light, attachment, rotation,
+                    lo,d,lo, hi,d,lo, hi,d,hi, lo,d,hi);
+            case UP -> orientedQuad(c, pose, light, attachment, rotation,
+                    lo,1-d,hi, hi,1-d,hi, hi,1-d,lo, lo,1-d,lo);
+            case NORTH -> orientedQuad(c, pose, light, attachment, rotation,
+                    lo,hi,d, hi,hi,d, hi,lo,d, lo,lo,d);
+            case SOUTH -> orientedQuad(c, pose, light, attachment, rotation,
+                    hi,hi,1-d, lo,hi,1-d, lo,lo,1-d, hi,lo,1-d);
+            case WEST -> orientedQuad(c, pose, light, attachment, rotation,
+                    d,hi,hi, d,hi,lo, d,lo,lo, d,lo,hi);
+            case EAST -> orientedQuad(c, pose, light, attachment, rotation,
+                    1-d,hi,lo, 1-d,hi,hi, 1-d,lo,hi, 1-d,lo,lo);
+        }
+    }
+
+    static void gateIndicator(
+            VertexConsumer c,
+            PoseStack.Pose pose,
+            int light,
+            Direction attachment
+    ) {
+        facePart(c, pose, light, attachment, .16F, .14F);
+    }
+
     static void framedWire(
             VertexConsumer c,
             PoseStack.Pose pose,
             int light
     ) {
         box(c, pose, light, .375F,.375F,.375F, .625F,.625F,.625F);
+    }
+
+    static void framedWireOverlay(
+            VertexConsumer c,
+            PoseStack.Pose pose,
+            int light
+    ) {
+        float e = .0015F;
+        box(
+                c,
+                pose,
+                light,
+                .375F-e,.375F-e,.375F-e,
+                .625F+e,.625F+e,.625F+e
+        );
+    }
+
+    private static void orientedQuad(
+            VertexConsumer c,
+            PoseStack.Pose pose,
+            int light,
+            Direction normal,
+            int rotation,
+            float ax,float ay,float az,
+            float bx,float by,float bz,
+            float cx,float cy,float cz,
+            float dx,float dy,float dz
+    ) {
+        float[][] uv = {
+                {0,0},{1,0},{1,1},{0,1}
+        };
+        int r = Math.floorMod(rotation, 4);
+
+        float nx = normal.getStepX();
+        float ny = normal.getStepY();
+        float nz = normal.getStepZ();
+
+        float[][] p = {
+                {ax,ay,az},{bx,by,bz},{cx,cy,cz},{dx,dy,dz}
+        };
+
+        for (int i = 0; i < 4; i++) {
+            float[] t = uv[(i + r) & 3];
+            float[] v = p[i];
+            vertex(c,pose,light,v[0],v[1],v[2],t[0],t[1],nx,ny,nz);
+        }
+        for (int i = 3; i >= 0; i--) {
+            float[] t = uv[(i + r) & 3];
+            float[] v = p[i];
+            vertex(c,pose,light,v[0],v[1],v[2],t[0],t[1],-nx,-ny,-nz);
+        }
     }
 
     private static void face(
