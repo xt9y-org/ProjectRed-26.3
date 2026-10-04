@@ -1524,6 +1524,40 @@ public final class MultipartBlockEntity extends BlockEntity {
             BlockState state = level.getBlockState(worldPosition);
             level.sendBlockUpdated(worldPosition, state, state, 3);
             level.updateNeighborsAt(worldPosition, state.getBlock());
+
+            if (!level.isClientSide()) {
+                notifyExternalRedstoneNeighbors(state);
+            }
+        }
+    }
+
+    private void notifyExternalRedstoneNeighbors(BlockState sourceState) {
+        // Upstream RedstoneGatePart::notifyExternals() and
+        // RedAlloyWirePart::propagateOther() deliberately notify not only
+        // the directly powered block, but also its surrounding blocks.
+        // Vanilla needs those second-ring notifications when a ProjectRed
+        // output strongly powers a solid conductor.
+        Set<Long> notified = new HashSet<>();
+
+        for (Direction outputSide : Direction.values()) {
+            BlockPos poweredPos = worldPosition.relative(outputSide);
+
+            if (notified.add(poweredPos.asLong())) {
+                level.updateNeighborsAt(poweredPos, sourceState.getBlock());
+            }
+
+            for (Direction around : Direction.values()) {
+                if (around == outputSide.getOpposite()) continue;
+
+                BlockPos neighbor = poweredPos.relative(around);
+                if (notified.add(neighbor.asLong())) {
+                    level.neighborChanged(
+                            neighbor,
+                            sourceState.getBlock(),
+                            poweredPos
+                    );
+                }
+            }
         }
     }
 
