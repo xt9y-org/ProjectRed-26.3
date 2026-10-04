@@ -1,5 +1,8 @@
 package dev.xt9y.projectred.client;
 
+import dev.xt9y.projectred.integration.GatePart;
+import dev.xt9y.projectred.integration.GateType;
+import dev.xt9y.projectred.multipart.MultipartBlockEntity;
 import dev.xt9y.projectred.network.GateConfigEditPayload;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -85,6 +88,26 @@ public final class CounterConfigScreen extends Screen {
                         "counter|" + action + "|" + delta
                 )
         );
+    }
+
+    @Override
+    public void tick() {
+        super.tick();
+
+        if (this.minecraft == null
+                || this.minecraft.level == null
+                || !(this.minecraft.level.getBlockEntity(pos)
+                instanceof MultipartBlockEntity multipart)
+                || !(multipart.part(slot) instanceof GatePart gate)
+                || gate.type() != GateType.COUNTER) {
+            this.onClose();
+            return;
+        }
+
+        maximum = gate.counterMax();
+        increment = gate.counterIncrement();
+        decrement = gate.counterDecrement();
+        value = gate.counterValue();
     }
 
     @Override
