@@ -6,6 +6,7 @@ import dev.xt9y.projectred.integration.GatePart;
 import dev.xt9y.projectred.transmission.WireFamily;
 import dev.xt9y.projectred.transmission.WirePart;
 import dev.xt9y.projectred.transmission.WireSpec;
+import dev.xt9y.projectred.transmission.RedwirePowerContext;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -23,6 +24,7 @@ import net.minecraft.world.entity.decoration.ItemFrame;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.RedStoneWireBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.ValueInput;
@@ -350,6 +352,21 @@ public final class MultipartBlockEntity extends BlockEntity {
                     expectedAttachment
             );
             return Math.max(0, raw - 1);
+        }
+
+        BlockState neighborState = level.getBlockState(neighborPos);
+
+        // Face redwire has ProjectRed's explicit dust lookup. Dust's normal
+        // signaling is conceptually disabled during propagation, but its
+        // stored POWER level can still feed a face wire with one level of
+        // attenuation. Center/framed wires do not make this face-style dust
+        // connection.
+        if (neighborState.is(Blocks.REDSTONE_WIRE)) {
+            if (receiver.center()) return 0;
+            return Math.max(
+                    neighborState.getValue(RedStoneWireBlock.POWER) - 1,
+                    0
+            );
         }
 
         return level.getSignal(neighborPos, direction) * 17;
@@ -932,7 +949,8 @@ public final class MultipartBlockEntity extends BlockEntity {
         int max = 0;
         for (Part p : parts()) {
             if (p instanceof WirePart wire
-                    && wire.spec().family() != WireFamily.BUNDLED) {
+                    && wire.spec().family() != WireFamily.BUNDLED
+                    && !RedwirePowerContext.suppressed()) {
                 max = Math.max(max, wireWeakSignalToward(wire, toward));
             } else if (p instanceof GatePart gate
                     && partConnectsToward(gate, toward)) {
@@ -946,7 +964,8 @@ public final class MultipartBlockEntity extends BlockEntity {
         int max = 0;
         for (Part p : parts()) {
             if (p instanceof WirePart wire) {
-                if (wire.spec().family() != WireFamily.RED_ALLOY
+                if (RedwirePowerContext.suppressed()
+                        || wire.spec().family() != WireFamily.RED_ALLOY
                         || wire.center()) {
                     continue;
                 }

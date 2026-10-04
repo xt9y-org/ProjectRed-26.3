@@ -37,7 +37,9 @@ public final class WirePart extends Part {
             return true;
         }
 
-        int next = owner.calculateRedwireInput(this);
+        int next = RedwirePowerContext.suppress(
+                () -> owner.calculateRedwireInput(this)
+        );
         next = Math.max(0, Math.min(255, next));
         if (next == signal) return false;
         signal = next;
