@@ -467,9 +467,6 @@ public final class MultipartBlockEntity extends BlockEntity {
             }
             return receiver.redwireCompatible(wire.spec()) ? wire.signal() : 0;
         }
-        if (p instanceof GatePart gate) {
-            return gateRawOutputToward(gate, expectedAttachment.getOpposite());
-        }
         return 0;
     }
 
@@ -523,9 +520,6 @@ public final class MultipartBlockEntity extends BlockEntity {
                 out[wire.spec().color()] = wire.signal();
                 return out;
             }
-        }
-        if (p instanceof GatePart gate) {
-            return gateBundledOutputToward(gate, expectedAttachment.getOpposite());
         }
         return null;
     }
@@ -668,13 +662,6 @@ public final class MultipartBlockEntity extends BlockEntity {
         Part p = multipart.part(direction.getOpposite().ordinal());
         if (p instanceof WirePart other) {
             return receiver.canConnect(other);
-        }
-        if (p instanceof GatePart gate) {
-            return gateConnectsToward(
-                    gate,
-                    attachment.getOpposite(),
-                    receiver.spec().family() == WireFamily.BUNDLED
-            );
         }
         return false;
     }

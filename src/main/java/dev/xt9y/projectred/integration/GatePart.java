@@ -304,7 +304,7 @@ public final class GatePart extends Part {
 
     private void tickSequencer(MultipartBlockEntity owner) {
         if (owner.getLevel() == null) return;
-        int step = (int) (owner.getLevel().getGameTime() % (timerPeriod * 4L) / timerPeriod);
+        int step = (int) (owner.getLevel().getTimeOfDay() % (timerPeriod * 4L) / timerPeriod);
         int out = 1 << step;
         if (shape == 1) out = flipMaskZ(out);
         state = out << 4;
@@ -345,8 +345,10 @@ public final class GatePart extends Part {
             case BUS_TRANSCEIVER -> {
                 int control = owner.gateInput(this, 0xA);
                 state = (state & 0xF0) | control;
-                bundleInput0 = BundledSignals.packDigital(owner.gateBundledInput(this, 0));
-                bundleInput2 = BundledSignals.packDigital(owner.gateBundledInput(this, 2));
+                bundleInput0 = BundledSignals.packDigital(owner.gateBundledInput(this, 0))
+                        | bundleOutput0;
+                bundleInput2 = BundledSignals.packDigital(owner.gateBundledInput(this, 2))
+                        | bundleOutput2;
 
                 int c = shape == 1 ? flipMaskZ(control) : control;
                 int next0 = (c & 2) != 0 ? bundleInput2 : 0;
@@ -478,13 +480,19 @@ public final class GatePart extends Part {
                 int right = owner.gateAnalogInput(this, 3);
                 int oldOut = state2 & 0xF;
                 int side = Math.max(left, right);
-                int out = shape == 0 ? (back > side ? back : 0) : Math.max(back - side, 0);
-                int digital = (left > 0 ? 2 : 0) | (back > 0 ? 4 : 0) | (right > 0 ? 8 : 0);
+                int out = shape == 0
+                        ? (back > side ? back : 0)
+                        : Math.max(back - side, 0);
+                int digital = (left > 0 ? 2 : 0)
+                        | (back > 0 ? 4 : 0)
+                        | (right > 0 ? 8 : 0);
                 state = (state & 0xF0) | digital;
-                state2 = (left << 4) | (back << 8) | (right << 12) | oldOut;
+                state2 = (left << 4)
+                        | (back << 8)
+                        | (right << 12)
+                        | oldOut;
                 if (out != oldOut) {
-                    state2 = (state2 & 0xFFF0) | out;
-                    state = (state & 0xF) | (out != 0 ? 0x10 : 0);
+                    schedule(owner, 2);
                 }
                 return;
             }
@@ -567,6 +575,21 @@ public final class GatePart extends Part {
                         ? ((digital & 4) != 0 && (digital & 0xA) != 0 ? 1 : 0)
                         : ((digital & 0xA) == 0 ? state >> 4 : (digital & 4) == 0 ? 0 : 1);
                 state = (state & 0xF) | out << 4;
+                return;
+            }
+            case COMPARATOR -> {
+                int oldOut = state2 & 0xF;
+                int left = state2 >> 4 & 0xF;
+                int back = state2 >> 8 & 0xF;
+                int right = state2 >> 12 & 0xF;
+                int side = Math.max(left, right);
+                int out = shape == 0
+                        ? (back > side ? back : 0)
+                        : Math.max(back - side, 0);
+                if (out != oldOut) {
+                    state2 = (state2 & 0xFFF0) | out;
+                    state = (state & 0xF) | (out != 0 ? 0x10 : 0);
+                }
                 return;
             }
             case BUS_TRANSCEIVER -> {
