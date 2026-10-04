@@ -47,6 +47,18 @@ public final class MultipartBlock extends BaseEntityBlock {
     }
 
     @Override
+    protected int getDirectSignal(
+            BlockState state,
+            BlockGetter level,
+            BlockPos pos,
+            Direction direction
+    ) {
+        return level.getBlockEntity(pos) instanceof MultipartBlockEntity be
+                ? be.directSignal(direction)
+                : 0;
+    }
+
+    @Override
     protected List<ItemStack> getDrops(BlockState state, LootParams.Builder params) {
         BlockEntity be = params.getOptionalParameter(LootContextParams.BLOCK_ENTITY);
         if (!(be instanceof MultipartBlockEntity mp)) return List.of();

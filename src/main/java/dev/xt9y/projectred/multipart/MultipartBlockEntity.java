@@ -924,17 +924,54 @@ public final class MultipartBlockEntity extends BlockEntity {
     public int vanillaSignal(Direction toward) {
         int max = 0;
         for (Part p : parts()) {
-            if (!partConnectsToward(p, toward)) continue;
-
             if (p instanceof WirePart wire
                     && wire.spec().family() != WireFamily.BUNDLED) {
-                max = Math.max(max, wire.vanillaSignal());
-            }
-            if (p instanceof GatePart gate) {
+                max = Math.max(max, wireWeakSignalToward(wire, toward));
+            } else if (p instanceof GatePart gate
+                    && partConnectsToward(gate, toward)) {
                 max = Math.max(max, gateOutputToward(gate, toward));
             }
         }
         return max;
+    }
+
+    public int directSignal(Direction toward) {
+        int max = 0;
+        for (Part p : parts()) {
+            if (!(p instanceof WirePart wire)
+                    || wire.spec().family() != WireFamily.RED_ALLOY
+                    || wire.center()) {
+                continue;
+            }
+
+            Direction attachment = Direction.values()[wire.slot()];
+            if (toward == attachment) {
+                max = Math.max(max, wire.vanillaSignal());
+            }
+        }
+        return max;
+    }
+
+    private int wireWeakSignalToward(WirePart wire, Direction toward) {
+        if (wire.spec().family() == WireFamily.RED_ALLOY) {
+            // Uninsulated ProjectRed wire deliberately weak-powers all sides.
+            return wire.vanillaSignal();
+        }
+
+        int connections = visualWireConnections(wire);
+        if ((connections & (1 << toward.ordinal())) == 0) {
+            return 0;
+        }
+
+        if (!wire.center()) {
+            Direction attachment = Direction.values()[wire.slot()];
+            // Insulated face wire never powers above/below its mounting plane.
+            if (toward.getAxis() == attachment.getAxis()) {
+                return 0;
+            }
+        }
+
+        return wire.vanillaSignal();
     }
 
     public static Direction localToWorld(Direction attachment, int rotation, int local) {
