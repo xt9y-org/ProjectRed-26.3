@@ -1344,6 +1344,7 @@ public final class MultipartBlockEntity extends BlockEntity {
         for (Part p : parts()) {
             if (p == receiver) continue;
             if (p instanceof WirePart wire
+                    && wire.spec().family() == WireFamily.BUNDLED
                     && internalWireMeetsDirection(wire, direction)) {
                 out = BundledSignals.raise(
                         out,
@@ -1443,7 +1444,8 @@ public final class MultipartBlockEntity extends BlockEntity {
                 continue;
             }
 
-            if (p instanceof WirePart wire) {
+            if (p instanceof WirePart wire
+                    && wire.spec().family() == WireFamily.BUNDLED) {
                 out = BundledSignals.raise(
                         out,
                         wire.bundledSignal(),
