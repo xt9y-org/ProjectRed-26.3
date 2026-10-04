@@ -74,6 +74,14 @@ public final class GatePart extends Part {
         return state;
     }
 
+    public boolean isArrayCell() {
+        return switch (type) {
+            case NULL_CELL, INVERT_CELL, BUFFER_CELL,
+                    AND_CELL, TRANSPARENT_LATCH_CELL -> true;
+            default -> false;
+        };
+    }
+
     public int timerPeriod() {
         return timerPeriod;
     }
