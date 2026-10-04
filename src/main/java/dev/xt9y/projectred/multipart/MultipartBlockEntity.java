@@ -561,13 +561,13 @@ public final class MultipartBlockEntity extends BlockEntity {
             } else if (p instanceof GatePart gate) {
                 if (receiver.center()) {
                     for (int local = 0; local < 4; local++) {
-                        max = Math.max(max, Math.max(0, gate.outputRawLocal(local) - 1));
+                        max = Math.max(max, gate.outputRawLocal(local));
                     }
                 } else {
                     Direction toward = Direction.values()[receiver.slot()];
                     max = Math.max(
                             max,
-                            gateRawOutputToward(gate, toward)
+                            gateRedwireOutputToward(gate, toward)
                     );
                 }
             }
@@ -1087,7 +1087,7 @@ public final class MultipartBlockEntity extends BlockEntity {
                 receiver.rotation(),
                 local
         );
-        int result = Math.min(15, (gateRedwireRawInput(receiver, local) + 16) / 17);
+        int result = gateInputToward(receiver, direction);
 
         if (level == null) return result;
 
@@ -1199,18 +1199,23 @@ public final class MultipartBlockEntity extends BlockEntity {
                 max = Math.max(max, wire.vanillaSignal());
             }
             if (p instanceof GatePart other) {
-                int raw = gateRedwireOutputToward(
-                        other,
-                        worldDir.getOpposite()
+                max = Math.max(
+                        max,
+                        gateOutputToward(other, worldDir.getOpposite())
                 );
-                max = Math.max(max, Math.min(15, (raw + 16) / 17));
             }
         }
         if (level != null) {
             BlockPos np = worldPosition.relative(worldDir);
-            max = Math.max(max, level.getSignal(np, worldDir));
             BlockEntity nbe = level.getBlockEntity(np);
-            if (nbe instanceof MultipartBlockEntity mp) max = Math.max(max, mp.vanillaSignal(worldDir.getOpposite()));
+            if (nbe instanceof MultipartBlockEntity mp) {
+                max = Math.max(
+                        max,
+                        mp.vanillaSignal(worldDir.getOpposite())
+                );
+            } else {
+                max = Math.max(max, level.getSignal(np, worldDir));
+            }
         }
         return max;
     }
