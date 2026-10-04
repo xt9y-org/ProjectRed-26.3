@@ -268,7 +268,7 @@ public final class MultipartBlockEntity extends BlockEntity {
         if (neighborState.hasAnalogOutputSignal()) {
             result = Math.max(
                     result,
-                    neighborState.getAnalogOutputSignal(level, neighborPos)
+                    neighborState.getAnalogOutputSignal(level, neighborPos, direction.getOpposite())
             );
         }
         return Math.max(0, Math.min(15, result));
