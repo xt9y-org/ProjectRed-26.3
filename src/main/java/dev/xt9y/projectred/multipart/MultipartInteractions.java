@@ -4,6 +4,7 @@ import dev.xt9y.projectred.integration.GatePart;
 import dev.xt9y.projectred.integration.GateType;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.ItemStack;
 
@@ -28,7 +29,7 @@ public final class MultipartInteractions {
             }
 
             ItemStack held = player.getItemInHand(hand);
-            DyeColor dye = DyeColor.getColor(held);
+            DyeColor dye = held.get(DataComponents.DYE);
             if (dye == null) {
                 return InteractionResult.PASS;
             }
