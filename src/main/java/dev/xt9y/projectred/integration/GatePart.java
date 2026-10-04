@@ -94,6 +94,11 @@ public final class GatePart extends Part {
         return pressMask & 0xFFFF;
     }
 
+    public void setDisplayColor(int color) {
+        if (type != GateType.SEGMENT_DISPLAY) return;
+        state = Math.max(0, Math.min(15, color));
+    }
+
     public void rotate() {
         rotation = (rotation + 1) & 3;
     }

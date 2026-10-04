@@ -2,6 +2,7 @@ package dev.xt9y.projectred;
 
 import dev.xt9y.projectred.content.PRContent;
 import dev.xt9y.projectred.network.PRNetworking;
+import dev.xt9y.projectred.multipart.MultipartInteractions;
 import net.fabricmc.api.ModInitializer;
 import net.minecraft.resources.Identifier;
 import org.slf4j.Logger;
@@ -19,6 +20,7 @@ public final class ProjectRed263 implements ModInitializer {
     public void onInitialize() {
         PRContent.initialize();
         PRNetworking.initialize();
+        MultipartInteractions.initialize();
         LOGGER.info("ProjectRed 26.3 redstone-only port initialized");
     }
 }

@@ -859,6 +859,10 @@ public final class MultipartBlockEntity extends BlockEntity {
         return dirs[(local + rotation) & 3];
     }
 
+    public void markPartChanged() {
+        syncChanged();
+    }
+
     private void syncChanged() {
         setChanged();
         if (level != null) {
