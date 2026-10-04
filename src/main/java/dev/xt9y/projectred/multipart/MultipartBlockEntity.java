@@ -1067,7 +1067,7 @@ public final class MultipartBlockEntity extends BlockEntity {
         if (inside instanceof GatePart gate) {
             return gateConnectsToward(
                     gate,
-                    Direction.values()[receiver.slot()].getOpposite(),
+                    Direction.values()[receiver.slot()],
                     receiver.spec().family() == WireFamily.BUNDLED
             );
         }
@@ -1109,7 +1109,7 @@ public final class MultipartBlockEntity extends BlockEntity {
         if (inside instanceof GatePart gate) {
             return gateConnectsToward(
                     gate,
-                    Direction.values()[receiver.slot()].getOpposite(),
+                    Direction.values()[receiver.slot()],
                     receiver.spec().family() == WireFamily.BUNDLED
             );
         }
