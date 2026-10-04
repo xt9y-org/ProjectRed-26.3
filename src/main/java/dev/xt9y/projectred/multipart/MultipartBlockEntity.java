@@ -89,6 +89,23 @@ public final class MultipartBlockEntity extends BlockEntity {
         return old;
     }
 
+    public boolean removeAndDrop(int slot) {
+        if (level == null) return false;
+
+        Part removed = remove(slot);
+        if (removed == null) return false;
+
+        net.minecraft.world.item.ItemStack stack = PRContent.stackFor(removed);
+        if (!stack.isEmpty()) {
+            net.minecraft.world.level.block.Block.popResource(
+                    level,
+                    worldPosition,
+                    stack
+            );
+        }
+        return true;
+    }
+
     public int slotFromHit(Vec3 hit) {
         double x = hit.x - worldPosition.getX();
         double y = hit.y - worldPosition.getY();

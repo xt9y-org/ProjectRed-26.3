@@ -7,6 +7,8 @@ import net.fabricmc.fabric.api.client.rendering.v1.BlockEntityRendererRegistry;
 public final class ProjectRed263Client implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
+        MultipartClientInteraction.initialize();
+
         BlockEntityRendererRegistry.register(
                 PRContent.MULTIPART_BE,
                 MultipartRenderer::new
