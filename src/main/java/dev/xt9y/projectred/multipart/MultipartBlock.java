@@ -37,6 +37,18 @@ public final class MultipartBlock extends BaseEntityBlock {
     }
 
     @Override
+    protected VoxelShape getCollisionShape(
+            BlockState state,
+            BlockGetter level,
+            BlockPos pos,
+            CollisionContext context
+    ) {
+        return level.getBlockEntity(pos) instanceof MultipartBlockEntity be
+                ? be.collisionShape()
+                : Shapes.empty();
+    }
+
+    @Override
     protected boolean isSignalSource(BlockState state) {
         return true;
     }
