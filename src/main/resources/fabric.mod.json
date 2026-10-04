@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "projectred",
+  "version": "${version}",
+  "name": "ProjectRed 26.3",
+  "description": "Fabric 26.3 port of ProjectRed redstone transmission and logic.",
+  "authors": ["MrTJP", "ChickenBones", "covers1624", "xt9y-org"],
+  "contact": {
+    "sources": "https://github.com/xt9y-org/ProjectRed-26.3"
+  },
+  "license": "MIT",
+  "environment": "*",
+  "entrypoints": {
+    "main": ["dev.xt9y.projectred.ProjectRed263"]
+  },
+  "depends": {
+    "fabricloader": ">=0.19.5",
+    "minecraft": "~26.3",
+    "java": ">=25",
+    "fabric-api": "*"
+  }
+}
