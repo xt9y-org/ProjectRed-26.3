@@ -4,12 +4,20 @@ import dev.xt9y.projectred.integration.GatePart;
 import dev.xt9y.projectred.integration.GateType;
 import dev.xt9y.projectred.multipart.MultipartBlockEntity;
 import dev.xt9y.projectred.multipart.Part;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
+import net.minecraft.core.BlockPos;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.server.level.ServerPlayer;
 
 public final class PRNetworking {
     private static boolean initialized;
+    private static final Map<UUID, BreakTarget> BREAK_TARGETS = new HashMap<>();
+
+    private record BreakTarget(BlockPos pos, int slot) {}
 
     public static void initialize() {
         if (initialized) return;
@@ -30,7 +38,12 @@ public final class PRNetworking {
 
         ServerPlayNetworking.registerGlobalReceiver(
                 MultipartBreakPayload.TYPE,
-                (payload, context) -> breakPart(context.player(), payload)
+                (payload, context) -> selectBreakPart(context.player(), payload)
+        );
+
+        PlayerBlockBreakEvents.BEFORE.register(
+                (level, player, pos, state, blockEntity) ->
+                        beforeBlockBreak(player, pos, blockEntity)
         );
         ServerPlayNetworking.registerGlobalReceiver(
                 GateConfigEditPayload.TYPE,
@@ -38,7 +51,7 @@ public final class PRNetworking {
         );
     }
 
-    private static void breakPart(
+    private static void selectBreakPart(
             ServerPlayer player,
             MultipartBreakPayload payload
     ) {
@@ -48,11 +61,42 @@ public final class PRNetworking {
                 instanceof MultipartBlockEntity multipart)) return;
         if (!multipart.hasSlot(payload.slot())) return;
 
-        if (player.isCreative()) {
-            multipart.remove(payload.slot());
-        } else {
-            multipart.removeAndDrop(payload.slot());
+        BREAK_TARGETS.put(
+                player.getUUID(),
+                new BreakTarget(payload.pos().immutable(), payload.slot())
+        );
+    }
+
+    private static boolean beforeBlockBreak(
+            net.minecraft.world.entity.player.Player player,
+            BlockPos pos,
+            net.minecraft.world.level.block.entity.BlockEntity blockEntity
+    ) {
+        if (!(blockEntity instanceof MultipartBlockEntity multipart)) {
+            BREAK_TARGETS.remove(player.getUUID());
+            return true;
         }
+
+        // Never allow vanilla to destroy the multipart container directly.
+        // A modded client sends the exact selected part when mining starts.
+        BreakTarget target = BREAK_TARGETS.get(player.getUUID());
+        if (target == null || !target.pos().equals(pos)) {
+            return false;
+        }
+
+        BREAK_TARGETS.remove(player.getUUID());
+
+        if (!multipart.hasSlot(target.slot())) {
+            return false;
+        }
+
+        if (player.isCreative()) {
+            multipart.remove(target.slot());
+        } else {
+            multipart.removeAndDrop(target.slot());
+        }
+
+        return false;
     }
 
     public static boolean openGateConfig(
