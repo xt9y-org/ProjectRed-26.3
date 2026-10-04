@@ -1520,6 +1520,21 @@ public final class MultipartBlockEntity extends BlockEntity {
         return Math.min(15, (gateRawOutputToward(gate, toward) + 16) / 17);
     }
 
+    private int gateStrongOutputToward(
+            GatePart gate,
+            Direction toward
+    ) {
+        Direction attachment = Direction.values()[gate.slot()];
+        if (toward.getAxis() == attachment.getAxis()) return 0;
+
+        for (int r = 0; r < 4; r++) {
+            if (localToWorld(attachment, gate.rotation(), r) == toward) {
+                return gate.outputLocal(r);
+            }
+        }
+        return 0;
+    }
+
     private int gateRawOutputToward(GatePart gate, Direction toward) {
         Direction attachment = Direction.values()[gate.slot()];
         if (toward.getAxis() == attachment.getAxis()) return 0;
@@ -1621,9 +1636,11 @@ public final class MultipartBlockEntity extends BlockEntity {
                 }
             } else if (p instanceof GatePart gate
                     && partConnectsToward(gate, toward)) {
-                // Upstream RedstoneGatePart uses the same output level for
-                // weak and strong power on its four logic sides.
-                max = Math.max(max, gateOutputToward(gate, toward));
+                // RedstoneGatePart strong power comes from getOutput(), not
+                // from IRedwirePart#getRedwireSignal(). This distinction is
+                // essential for array cells: their passing 0..255 tracks are
+                // weak redwire only, while true logic outputs may strong-power.
+                max = Math.max(max, gateStrongOutputToward(gate, toward));
             }
         }
         return max;
