@@ -1308,7 +1308,8 @@ public final class MultipartBlockEntity extends BlockEntity {
                 receiver.rotation(),
                 local
         );
-        int result = gateInputToward(receiver, direction);
+        int raw = gateRedstoneRawInput(receiver, local);
+        int result = Math.max(0, Math.min(15, (raw + 16) / 17));
 
         if (level == null) return result;
 
@@ -1317,7 +1318,11 @@ public final class MultipartBlockEntity extends BlockEntity {
         if (neighborState.hasAnalogOutputSignal()) {
             result = Math.max(
                     result,
-                    neighborState.getAnalogOutputSignal(level, neighborPos, direction.getOpposite())
+                    neighborState.getAnalogOutputSignal(
+                            level,
+                            neighborPos,
+                            direction.getOpposite()
+                    )
             );
         }
         return Math.max(0, Math.min(15, result));
@@ -1408,62 +1413,128 @@ public final class MultipartBlockEntity extends BlockEntity {
 
     public int gateInput(GatePart gate, int mask) {
         int input = 0;
-        for (int r=0;r<4;r++) {
-            if ((mask & 1 << r) == 0) continue;
-            Direction worldDir = localToWorld(Direction.values()[gate.slot()], gate.rotation(), r);
-            int signal = gateInputToward(gate, worldDir);
-            if (signal > 0) input |= 1 << r;
+        for (int local = 0; local < 4; local++) {
+            if ((mask & (1 << local)) == 0) continue;
+            if (gateRedstoneRawInput(gate, local) > 0) {
+                input |= 1 << local;
+            }
         }
         return input;
     }
 
-    private int gateInputToward(GatePart receiver, Direction worldDir) {
-        int max = 0;
-        for (Part p : parts()) {
-            if (p == receiver) continue;
-            if (p instanceof WirePart wire
-                    && internalWireMeetsDirection(wire, worldDir)) {
-                max = Math.max(max, wire.vanillaSignal());
+    private int gateRedstoneRawInput(
+            GatePart receiver,
+            int local
+    ) {
+        if (!receiver.canConnectRedstoneLocal(local)) {
+            return 0;
+        }
+
+        Direction attachment = Direction.values()[receiver.slot()];
+        Direction direction = localToWorld(
+                attachment,
+                receiver.rotation(),
+                local
+        );
+
+        if (level == null) {
+            return internalGateRedstoneRawInput(direction);
+        }
+
+        // IConnectableFacePart discovers an external straight connection
+        // first. Only when none exists may it wrap around the outer corner.
+        Integer straight = straightGateRedwireRaw(
+                attachment,
+                direction
+        );
+        if (straight != null) {
+            return straight;
+        }
+
+        if (outsideCornerEdgeOpen(direction, attachment)) {
+            Integer corner = cornerGateRedwireRaw(
+                    attachment,
+                    direction
+            );
+            if (corner != null) {
+                return corner;
             }
         }
-        if (level != null) {
-            BlockPos np = worldPosition.relative(worldDir);
-            BlockEntity nbe = level.getBlockEntity(np);
-            if (nbe instanceof MultipartBlockEntity mp) {
-                max = Math.max(
-                        max,
-                        mp.gateSignalTowardFace(
-                                worldDir.getOpposite(),
-                                Direction.values()[receiver.slot()]
-                        )
-                );
-            } else {
-                max = Math.max(max, level.getSignal(np, worldDir));
-            }
+
+        // RedstoneGatePart#getRedstoneInput checks an inside-face connection
+        // only when no corner/straight ProjectRed connection was discovered.
+        Integer inside = insideGateRedwireRaw(direction);
+        if (inside != null) {
+            return inside;
         }
-        return max;
+
+        // No ProjectRed connection map entry: use the vanilla interaction
+        // lookup exactly as RedstoneGatePart does.
+        BlockPos neighborPos = worldPosition.relative(direction);
+        return level.getSignal(neighborPos, direction) * 17;
     }
 
-    private int gateSignalTowardFace(
-            Direction toward,
-            Direction expectedAttachment
-    ) {
-        int max = 0;
-        for (Part p : parts()) {
-            if (p.center()
-                    || Direction.values()[p.slot()] != expectedAttachment
-                    || !partConnectsToward(p, toward)) {
-                continue;
-            }
+    private int internalGateRedstoneRawInput(Direction direction) {
+        Integer inside = insideGateRedwireRaw(direction);
+        return inside == null ? 0 : inside;
+    }
 
-            if (p instanceof WirePart wire
-                    && wire.spec().family() != WireFamily.BUNDLED) {
-                max = Math.max(max, wire.vanillaSignal());
-            } else if (p instanceof GatePart gate) {
-                max = Math.max(max, gateOutputToward(gate, toward));
-            }
+    private Integer insideGateRedwireRaw(Direction direction) {
+        Part inside = face[direction.ordinal()];
+        if (inside instanceof WirePart wire
+                && wire.spec().family() != WireFamily.BUNDLED) {
+            return wire.signal();
         }
-        return max;
+        return null;
+    }
+
+    private Integer straightGateRedwireRaw(
+            Direction attachment,
+            Direction direction
+    ) {
+        BlockEntity neighbor = level.getBlockEntity(
+                worldPosition.relative(direction)
+        );
+        if (!(neighbor instanceof MultipartBlockEntity multipart)) {
+            return null;
+        }
+
+        Part part = multipart.part(attachment.ordinal());
+        if (!(part instanceof WirePart wire)
+                || wire.spec().family() == WireFamily.BUNDLED
+                || !partConnectsToward(wire, direction.getOpposite())
+                || !multipart.faceWireExternalOpen(
+                        wire,
+                        direction.getOpposite()
+                )) {
+            return null;
+        }
+
+        return wire.signal();
+    }
+
+    private Integer cornerGateRedwireRaw(
+            Direction attachment,
+            Direction direction
+    ) {
+        BlockPos cornerPos = worldPosition
+                .relative(direction)
+                .relative(attachment);
+        BlockEntity corner = level.getBlockEntity(cornerPos);
+        if (!(corner instanceof MultipartBlockEntity multipart)) {
+            return null;
+        }
+
+        Part part = multipart.part(direction.getOpposite().ordinal());
+        Direction farEdge = attachment.getOpposite();
+
+        if (!(part instanceof WirePart wire)
+                || wire.spec().family() == WireFamily.BUNDLED
+                || !multipart.faceWireExternalOpen(wire, farEdge)) {
+            return null;
+        }
+
+        return wire.signal();
     }
 
     private int[] bundledSignalTowardFace(
