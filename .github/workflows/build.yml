@@ -18,3 +18,48 @@ jobs:
         with:
           gradle-version: '9.8.0'
       - run: gradle clean build --stacktrace --no-daemon
+
+      - name: Smoke-test Fabric server
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p run
+          printf 'eula=true\n' > run/eula.txt
+          rm -rf run/world run/logs
+          : > server-smoke.log
+
+          set +e
+          timeout 120s gradle runServer --args nogui --no-daemon > server-smoke.log 2>&1 &
+          SERVER_PID=$!
+          set -e
+
+          READY=0
+          for _ in $(seq 1 120); do
+            if grep -Eq 'Done \([0-9.]+s\)!|For help, type' server-smoke.log; then
+              READY=1
+              break
+            fi
+            if ! kill -0 "$SERVER_PID" 2>/dev/null; then
+              break
+            fi
+            sleep 1
+          done
+
+          kill "$SERVER_PID" 2>/dev/null || true
+          wait "$SERVER_PID" 2>/dev/null || true
+          cat server-smoke.log
+
+          if [ "$READY" -ne 1 ]; then
+            echo "Fabric server did not finish creating/loading a world."
+            exit 1
+          fi
+
+      - name: Upload test JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: projectred-26.3-${{ github.run_number }}
+          path: |
+            build/libs/*.jar
+            !build/libs/*-sources.jar
+          if-no-files-found: error
+          retention-days: 14
