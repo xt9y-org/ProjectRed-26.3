@@ -221,7 +221,8 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
                                 pose,
                                 state.lightCoords,
                                 attachment,
-                                part.gateRotation
+                                part.gateRotation,
+                                .126F
                         )
                 );
                 if (part.bundledMask != 0) {

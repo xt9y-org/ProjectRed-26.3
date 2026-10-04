@@ -3,6 +3,7 @@ package dev.xt9y.projectred.multipart;
 import dev.xt9y.projectred.content.PRContent;
 import dev.xt9y.projectred.core.BundledSignals;
 import dev.xt9y.projectred.integration.GatePart;
+import dev.xt9y.projectred.integration.GateType;
 import dev.xt9y.projectred.transmission.WireFamily;
 import dev.xt9y.projectred.transmission.WirePart;
 import dev.xt9y.projectred.transmission.WireSpec;
