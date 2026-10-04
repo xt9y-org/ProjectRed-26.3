@@ -370,8 +370,17 @@ public final class GatePart extends Part {
 
     private void tickRainSensor(MultipartBlockEntity owner) {
         if (owner.getLevel() == null) return;
-        int out = owner.getLevel().isRaining() && owner.getLevel().canSeeSky(owner.getBlockPos()) ? 4 : 0;
-        state = (state & 0xF) | (out << 4);
+
+        int out = owner.getLevel().isRaining()
+                && owner.getLevel().canSeeSky(owner.getBlockPos())
+                ? 4
+                : 0;
+
+        // RainSensor inherits SimpleGatePart's feedbackMask(4) path upstream,
+        // so its low nibble mirrors redstone seen on the output side just
+        // like LightSensor. Keep the feedback bookkeeping identical.
+        int feedback = owner.gateInput(this, 4);
+        state = (feedback & 0xF) | (out << 4);
     }
 
     private void tickTimer(MultipartBlockEntity owner, long time) {
