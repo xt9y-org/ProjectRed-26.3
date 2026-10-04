@@ -38,6 +38,7 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
             WireFamily family,
             int color,
             boolean powered,
+            int connections,
             GateType gateType,
             int gateShape,
             int gateRotation,
@@ -71,6 +72,7 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
                         wire.spec().family(),
                         wire.spec().color(),
                         powered,
+                        blockEntity.visualWireConnections(wire),
                         null,
                         0,
                         0,
@@ -83,6 +85,7 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
                         null,
                         -1,
                         (gate.state() & 0xF0) != 0,
+                        0,
                         gate.type(),
                         gate.shape(),
                         gate.rotation(),
@@ -115,7 +118,8 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
                                 RenderGeometry.framedWire(
                                         consumer,
                                         pose,
-                                        state.lightCoords
+                                        state.lightCoords,
+                                        part.connections
                                 );
                             } else {
                                 float width = part.family == WireFamily.BUNDLED
@@ -123,13 +127,14 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
                                         : part.family == WireFamily.INSULATED
                                                 ? .375F
                                                 : .25F;
-                                RenderGeometry.facePart(
+                                RenderGeometry.wireFace(
                                         consumer,
                                         pose,
                                         state.lightCoords,
                                         Direction.values()[part.slot],
                                         width,
-                                        .0625F
+                                        .0625F,
+                                        part.connections
                                 );
                             }
                         }
@@ -142,7 +147,8 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
                             (pose, consumer) -> RenderGeometry.framedWireOverlay(
                                     consumer,
                                     pose,
-                                    state.lightCoords
+                                    state.lightCoords,
+                                    part.connections
                             )
                     );
                 }
