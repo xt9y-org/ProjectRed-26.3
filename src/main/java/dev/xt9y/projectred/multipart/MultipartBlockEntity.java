@@ -584,12 +584,16 @@ public final class MultipartBlockEntity extends BlockEntity {
         Direction attachment = Direction.values()[receiver.slot()];
         for (Direction direction : Direction.values()) {
             if (direction.getAxis() == attachment.getAxis()) continue;
+            if (!faceWireExternalOpen(receiver, direction)) continue;
 
             int straight = readStraightRedwire(receiver, direction, attachment);
             if (straight > 0) {
                 max = Math.max(max, straight);
-            } else {
-                max = Math.max(max, readCornerRedwire(receiver, direction, attachment));
+            } else if (outsideCornerEdgeOpen(direction, attachment)) {
+                max = Math.max(
+                        max,
+                        readCornerRedwire(receiver, direction, attachment)
+                );
             }
         }
 
@@ -719,8 +723,11 @@ public final class MultipartBlockEntity extends BlockEntity {
         Direction attachment = Direction.values()[receiver.slot()];
         for (Direction direction : Direction.values()) {
             if (direction.getAxis() == attachment.getAxis()) continue;
+            if (!faceWireExternalOpen(receiver, direction)) continue;
 
-            BlockEntity neighbor = level.getBlockEntity(worldPosition.relative(direction));
+            BlockEntity neighbor = level.getBlockEntity(
+                    worldPosition.relative(direction)
+            );
             boolean straightFound = false;
             if (neighbor instanceof MultipartBlockEntity multipart) {
                 int[] straight = multipart.bundledToward(
@@ -734,8 +741,10 @@ public final class MultipartBlockEntity extends BlockEntity {
                 }
             }
 
-            if (!straightFound) {
-                BlockPos cornerPos = worldPosition.relative(direction).relative(attachment);
+            if (!straightFound && outsideCornerEdgeOpen(direction, attachment)) {
+                BlockPos cornerPos = worldPosition
+                        .relative(direction)
+                        .relative(attachment);
                 BlockEntity corner = level.getBlockEntity(cornerPos);
                 if (corner instanceof MultipartBlockEntity multipart) {
                     int[] cornerSignal = multipart.cornerBundledSignal(
@@ -962,7 +971,10 @@ public final class MultipartBlockEntity extends BlockEntity {
                     attachment != null
                             && hasInsideWireConnection(receiver, direction);
 
-            if (!connected) {
+            boolean externalOpen = attachment == null
+                    || faceWireExternalOpen(receiver, direction);
+
+            if (!connected && externalOpen) {
                 connected = hasStraightWireConnection(
                         receiver,
                         direction,
@@ -970,7 +982,10 @@ public final class MultipartBlockEntity extends BlockEntity {
                 );
             }
 
-            if (!connected && attachment != null) {
+            if (!connected
+                    && attachment != null
+                    && externalOpen
+                    && outsideCornerEdgeOpen(direction, attachment)) {
                 connected = hasCornerWireConnection(
                         receiver,
                         direction,
@@ -983,6 +998,51 @@ public final class MultipartBlockEntity extends BlockEntity {
             }
         }
         return mask;
+    }
+
+    private boolean faceWireExternalOpen(
+            WirePart receiver,
+            Direction direction
+    ) {
+        if (receiver.center()) return true;
+
+        Part inside = face[direction.ordinal()];
+        if (inside == null) return true;
+
+        if (inside instanceof WirePart other) {
+            return receiver.canConnect(other);
+        }
+
+        if (inside instanceof GatePart gate) {
+            return gateConnectsToward(
+                    gate,
+                    Direction.values()[receiver.slot()].getOpposite(),
+                    receiver.spec().family() == WireFamily.BUNDLED
+            );
+        }
+
+        return false;
+    }
+
+    private boolean outsideCornerEdgeOpen(
+            Direction direction,
+            Direction attachment
+    ) {
+        if (level == null) return false;
+
+        BlockPos bendPos = worldPosition.relative(direction);
+        if (level.isEmptyBlock(bendPos)) return true;
+
+        BlockEntity bendEntity = level.getBlockEntity(bendPos);
+        if (!(bendEntity instanceof MultipartBlockEntity multipart)) {
+            return false;
+        }
+
+        // Upstream checks the two face slots touching the traversed edge
+        // (plus an edge-strip slot, which this Fabric multipart subset does
+        // not implement). A center/framed wire does not block the bend.
+        return !multipart.hasSlot(direction.getOpposite().ordinal())
+                && !multipart.hasSlot(attachment.ordinal());
     }
 
     private boolean hasInsideWireConnection(
