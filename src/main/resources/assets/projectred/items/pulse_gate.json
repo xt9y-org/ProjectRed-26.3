@@ -1,6 +1,6 @@
 {
   "model": {
     "type": "minecraft:model",
-    "model": "minecraft:item/repeater"
+    "model": "projectred:item/pulse_gate"
   }
 }

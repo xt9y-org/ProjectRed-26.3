@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "projectred:transmission/purple_insulated_wire_off"
+  }
+}

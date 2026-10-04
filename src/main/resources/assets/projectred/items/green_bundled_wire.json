@@ -1,6 +1,6 @@
 {
   "model": {
     "type": "minecraft:model",
-    "model": "minecraft:item/redstone"
+    "model": "projectred:item/green_bundled_wire"
   }
 }
