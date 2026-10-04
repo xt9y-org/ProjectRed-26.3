@@ -148,8 +148,45 @@ public final class MultipartBlockEntity extends BlockEntity {
         return slot == Part.CENTER_SLOT ? center : slot >= 0 && slot < 6 ? face[slot] : null;
     }
 
-    public boolean add(Part part) {
+    public boolean canAdd(Part part) {
         if (part == null || hasSlot(part.slot())) return false;
+
+        if (part.center()) {
+            for (Part existing : face) {
+                if (isArrayCell(existing)) return false;
+            }
+            return true;
+        }
+
+        Direction candidateSide = Direction.values()[part.slot()];
+        boolean candidateArray = isArrayCell(part);
+
+        if (candidateArray && center != null) return false;
+
+        for (Part existing : face) {
+            if (existing == null) continue;
+
+            boolean existingArray = isArrayCell(existing);
+            if (!candidateArray && !existingArray) continue;
+
+            Direction existingSide = Direction.values()[existing.slot()];
+
+            // Array cells use the upstream 6/8-deep collision body. A thin
+            // ordinary face part only fits on the directly opposite face.
+            // Two array cells always overlap, including on opposite faces.
+            if (candidateArray && existingArray) return false;
+            if (candidateArray && existingSide != candidateSide.getOpposite()) {
+                return false;
+            }
+            if (existingArray && candidateSide != existingSide.getOpposite()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public boolean add(Part part) {
+        if (!canAdd(part)) return false;
         if (part.center()) center = part; else face[part.slot()] = part;
 
         if (part instanceof GatePart gate
@@ -254,7 +291,16 @@ public final class MultipartBlockEntity extends BlockEntity {
     public VoxelShape shape() {
         VoxelShape out = Shapes.empty();
         if (center != null) out = Shapes.or(out, Shapes.box(.375,.375,.375,.625,.625,.625));
-        for (int i=0;i<6;i++) if (face[i] != null) out = Shapes.or(out, faceShape(Direction.values()[i]));
+        for (int i = 0; i < 6; i++) {
+            if (face[i] == null) continue;
+            Direction side = Direction.values()[i];
+            out = Shapes.or(
+                    out,
+                    isArrayCell(face[i])
+                            ? arrayCellShape(side)
+                            : faceShape(side)
+            );
+        }
         return out.isEmpty() ? Shapes.block() : out;
     }
 
@@ -266,6 +312,26 @@ public final class MultipartBlockEntity extends BlockEntity {
             case SOUTH -> Shapes.box(.0625,.0625,.875,.9375,.9375,1);
             case WEST -> Shapes.box(0,.0625,.0625,.125,.9375,.9375);
             case EAST -> Shapes.box(.875,.0625,.0625,1,.9375,.9375);
+        };
+    }
+
+    private static VoxelShape arrayCellShape(Direction d) {
+        return switch (d) {
+            case DOWN -> Shapes.box(0,0,0,1,.75,1);
+            case UP -> Shapes.box(0,.25,0,1,1,1);
+            case NORTH -> Shapes.box(0,0,0,1,1,.75);
+            case SOUTH -> Shapes.box(0,0,.25,1,1,1);
+            case WEST -> Shapes.box(0,0,0,.75,1,1);
+            case EAST -> Shapes.box(.25,0,0,1,1,1);
+        };
+    }
+
+    private static boolean isArrayCell(Part part) {
+        if (!(part instanceof GatePart gate)) return false;
+        return switch (gate.type()) {
+            case NULL_CELL, INVERT_CELL, BUFFER_CELL,
+                    AND_CELL, TRANSPARENT_LATCH_CELL -> true;
+            default -> false;
         };
     }
 
