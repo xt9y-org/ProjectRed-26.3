@@ -192,6 +192,7 @@ public final class GatePart extends Part {
             return;
         }
         pressMask ^= 1 << bit;
+        scheduledAt = 0;
     }
 
     public boolean canConnectLocal(int r) {
@@ -320,7 +321,10 @@ public final class GatePart extends Part {
         long time = owner.getLevel() == null ? 0 : owner.getLevel().getGameTime();
 
         if (scheduledAt == 0) {
-            scheduledAt = time + 2;
+            // This marker is set by interactions/config edits between BE
+            // ticks. One tick has elapsed by the time it is consumed here,
+            // so +1 preserves ProjectRed's 2-tick delay from the action.
+            scheduledAt = time + 1;
         }
 
         if (scheduledAt >= 0 && time >= scheduledAt) {
