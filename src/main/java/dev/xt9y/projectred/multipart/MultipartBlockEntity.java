@@ -686,15 +686,17 @@ public final class MultipartBlockEntity extends BlockEntity {
             Direction direction,
             Direction attachment
     ) {
-        BlockPos cornerPos = worldPosition.relative(direction).relative(attachment);
+        BlockPos cornerPos = worldPosition
+                .relative(direction)
+                .relative(attachment);
         BlockEntity corner = level.getBlockEntity(cornerPos);
         if (!(corner instanceof MultipartBlockEntity multipart)) return 0;
 
-        int raw = multipart.cornerRedwireSignal(
+        return multipart.cornerRedwireSignal(
                 direction.getOpposite(),
+                attachment.getOpposite(),
                 receiver.spec()
         );
-        return Math.max(0, raw - 1);
     }
 
     public int[] calculateBundledInput(WirePart receiver) {
@@ -713,7 +715,7 @@ public final class MultipartBlockEntity extends BlockEntity {
                                     receiver.spec(),
                                     null
                             ),
-                            true
+                            false
                     );
                 }
             }
@@ -736,7 +738,7 @@ public final class MultipartBlockEntity extends BlockEntity {
                         attachment
                 );
                 if (!BundledSignals.isZero(straight)) {
-                    out = BundledSignals.raise(out, straight, true);
+                    out = BundledSignals.raise(out, straight, false);
                     straightFound = true;
                 }
             }
@@ -749,9 +751,10 @@ public final class MultipartBlockEntity extends BlockEntity {
                 if (corner instanceof MultipartBlockEntity multipart) {
                     int[] cornerSignal = multipart.cornerBundledSignal(
                             direction.getOpposite(),
+                            attachment.getOpposite(),
                             receiver.spec()
                     );
-                    out = BundledSignals.raise(out, cornerSignal, true);
+                    out = BundledSignals.raise(out, cornerSignal, false);
                 }
             }
         }
@@ -838,16 +841,31 @@ public final class MultipartBlockEntity extends BlockEntity {
 
     private int cornerRedwireSignal(
             Direction expectedAttachment,
+            Direction edgeDirection,
             WireSpec receiver
     ) {
         Part p = face[expectedAttachment.ordinal()];
+
         if (p instanceof WirePart wire) {
+            if (!faceWireExternalOpen(wire, edgeDirection)) return 0;
+
             if (wire.spec().family() == WireFamily.BUNDLED
                     && receiver.family() == WireFamily.INSULATED) {
-                return wire.bundled()[receiver.color()];
+                return Math.max(
+                        0,
+                        wire.bundled()[receiver.color()] - 1
+                );
             }
-            return receiver.redwireCompatible(wire.spec()) ? wire.signal() : 0;
+
+            if (!receiver.redwireCompatible(wire.spec())) return 0;
+            return Math.max(0, wire.signal() - 1);
         }
+
+        if (p instanceof GatePart gate
+                && gateConnectsToward(gate, edgeDirection, false)) {
+            return gateRedwireOutputToward(gate, edgeDirection);
+        }
+
         return 0;
     }
 
@@ -856,6 +874,8 @@ public final class MultipartBlockEntity extends BlockEntity {
             WireSpec receiver,
             Direction expectedAttachment
     ) {
+        int[] out = new int[16];
+
         if (expectedAttachment == null) {
             if (!(center instanceof WirePart wire)) {
                 return null;
@@ -863,37 +883,41 @@ public final class MultipartBlockEntity extends BlockEntity {
 
             if (wire.spec().family() == WireFamily.BUNDLED
                     && receiver.bundledCompatible(wire.spec())) {
-                return wire.bundled();
+                return BundledSignals.raise(out, wire.bundled(), true);
             }
 
             if (wire.spec().family() == WireFamily.INSULATED) {
-                int[] one = new int[16];
-                one[wire.spec().color()] = wire.signal();
-                return one;
+                out[wire.spec().color()] = Math.max(0, wire.signal() - 1);
+                return out;
             }
             return null;
         }
 
-        int[] out = new int[16];
         for (Part p : parts()) {
             if (!partConnectsToward(p, toward)) continue;
 
             if (p instanceof WirePart wire) {
-                if (!straightAttachmentMatches(wire, expectedAttachment)) continue;
+                if (!straightAttachmentMatches(wire, expectedAttachment)) {
+                    continue;
+                }
 
                 if (wire.spec().family() == WireFamily.BUNDLED
                         && receiver.bundledCompatible(wire.spec())) {
-                    out = BundledSignals.raise(out, wire.bundled(), false);
+                    out = BundledSignals.raise(out, wire.bundled(), true);
                 } else if (wire.spec().family() == WireFamily.INSULATED) {
-                    int[] one = new int[16];
-                    one[wire.spec().color()] = wire.signal();
-                    out = BundledSignals.raise(out, one, false);
+                    int channel = wire.spec().color();
+                    out[channel] = Math.max(
+                            out[channel],
+                            Math.max(0, wire.signal() - 1)
+                    );
                 }
             } else if (p instanceof GatePart gate) {
-                if (expectedAttachment != null
-                        && Direction.values()[gate.slot()] != expectedAttachment) {
+                if (Direction.values()[gate.slot()] != expectedAttachment) {
                     continue;
                 }
+
+                // Bundled emitters inject their output at full 0..255
+                // strength; only cable/insulated-wire hops diminish.
                 out = BundledSignals.raise(
                         out,
                         gateBundledOutputToward(gate, toward),
@@ -906,20 +930,35 @@ public final class MultipartBlockEntity extends BlockEntity {
 
     private int[] cornerBundledSignal(
             Direction expectedAttachment,
+            Direction edgeDirection,
             WireSpec receiver
     ) {
         Part p = face[expectedAttachment.ordinal()];
+
         if (p instanceof WirePart wire) {
+            if (!faceWireExternalOpen(wire, edgeDirection)) return null;
+
+            int[] out = new int[16];
             if (wire.spec().family() == WireFamily.BUNDLED
                     && receiver.bundledCompatible(wire.spec())) {
-                return wire.bundled();
+                return BundledSignals.raise(out, wire.bundled(), true);
             }
+
             if (wire.spec().family() == WireFamily.INSULATED) {
-                int[] out = new int[16];
-                out[wire.spec().color()] = wire.signal();
+                out[wire.spec().color()] = Math.max(
+                        0,
+                        wire.signal() - 1
+                );
                 return out;
             }
+            return null;
         }
+
+        if (p instanceof GatePart gate
+                && gateConnectsToward(gate, edgeDirection, true)) {
+            return gateBundledOutputToward(gate, edgeDirection);
+        }
+
         return null;
     }
 
@@ -1113,14 +1152,28 @@ public final class MultipartBlockEntity extends BlockEntity {
             Direction direction,
             Direction attachment
     ) {
-        BlockPos cornerPos = worldPosition.relative(direction).relative(attachment);
+        BlockPos cornerPos = worldPosition
+                .relative(direction)
+                .relative(attachment);
         BlockEntity corner = level.getBlockEntity(cornerPos);
         if (!(corner instanceof MultipartBlockEntity multipart)) return false;
 
+        Direction edgeDirection = attachment.getOpposite();
         Part p = multipart.part(direction.getOpposite().ordinal());
+
         if (p instanceof WirePart other) {
-            return receiver.canConnect(other);
+            return receiver.canConnect(other)
+                    && multipart.faceWireExternalOpen(other, edgeDirection);
         }
+
+        if (p instanceof GatePart gate) {
+            return gateConnectsToward(
+                    gate,
+                    edgeDirection,
+                    receiver.spec().family() == WireFamily.BUNDLED
+            );
+        }
+
         return false;
     }
 
