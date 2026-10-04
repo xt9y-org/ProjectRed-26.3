@@ -100,18 +100,91 @@ final class RenderGeometry {
         facePart(c, pose, light, attachment, .16F, .14F);
     }
 
+    static void wireFace(
+            VertexConsumer c,
+            PoseStack.Pose pose,
+            int light,
+            Direction attachment,
+            float width,
+            float depth,
+            int connections
+    ) {
+        facePart(c, pose, light, attachment, width, depth);
+
+        float half = width * .5F;
+        float lo = .5F - half;
+        float hi = .5F + half;
+
+        for (Direction direction : Direction.values()) {
+            if ((connections & (1 << direction.ordinal())) == 0) continue;
+            if (direction.getAxis() == attachment.getAxis()) continue;
+
+            switch (attachment) {
+                case DOWN -> {
+                    if (direction == Direction.NORTH) box(c,pose,light,lo,0,0,hi,depth,.5F);
+                    if (direction == Direction.SOUTH) box(c,pose,light,lo,0,.5F,hi,depth,1);
+                    if (direction == Direction.WEST) box(c,pose,light,0,0,lo,.5F,depth,hi);
+                    if (direction == Direction.EAST) box(c,pose,light,.5F,0,lo,1,depth,hi);
+                }
+                case UP -> {
+                    if (direction == Direction.NORTH) box(c,pose,light,lo,1-depth,0,hi,1,.5F);
+                    if (direction == Direction.SOUTH) box(c,pose,light,lo,1-depth,.5F,hi,1,1);
+                    if (direction == Direction.WEST) box(c,pose,light,0,1-depth,lo,.5F,1,hi);
+                    if (direction == Direction.EAST) box(c,pose,light,.5F,1-depth,lo,1,1,hi);
+                }
+                case NORTH -> {
+                    if (direction == Direction.UP) box(c,pose,light,lo,.5F,0,hi,1,depth);
+                    if (direction == Direction.DOWN) box(c,pose,light,lo,0,0,hi,.5F,depth);
+                    if (direction == Direction.WEST) box(c,pose,light,0,lo,0,.5F,hi,depth);
+                    if (direction == Direction.EAST) box(c,pose,light,.5F,lo,0,1,hi,depth);
+                }
+                case SOUTH -> {
+                    if (direction == Direction.UP) box(c,pose,light,lo,.5F,1-depth,hi,1,1);
+                    if (direction == Direction.DOWN) box(c,pose,light,lo,0,1-depth,hi,.5F,1);
+                    if (direction == Direction.WEST) box(c,pose,light,0,lo,1-depth,.5F,hi,1);
+                    if (direction == Direction.EAST) box(c,pose,light,.5F,lo,1-depth,1,hi,1);
+                }
+                case WEST -> {
+                    if (direction == Direction.UP) box(c,pose,light,0,.5F,lo,depth,1,hi);
+                    if (direction == Direction.DOWN) box(c,pose,light,0,0,lo,depth,.5F,hi);
+                    if (direction == Direction.NORTH) box(c,pose,light,0,lo,0,depth,hi,.5F);
+                    if (direction == Direction.SOUTH) box(c,pose,light,0,lo,.5F,depth,hi,1);
+                }
+                case EAST -> {
+                    if (direction == Direction.UP) box(c,pose,light,1-depth,.5F,lo,1,1,hi);
+                    if (direction == Direction.DOWN) box(c,pose,light,1-depth,0,lo,1,.5F,hi);
+                    if (direction == Direction.NORTH) box(c,pose,light,1-depth,lo,0,1,hi,.5F);
+                    if (direction == Direction.SOUTH) box(c,pose,light,1-depth,lo,.5F,1,hi,1);
+                }
+            }
+        }
+    }
+
     static void framedWire(
             VertexConsumer c,
             PoseStack.Pose pose,
-            int light
+            int light,
+            int connections
     ) {
         box(c, pose, light, .375F,.375F,.375F, .625F,.625F,.625F);
+        for (Direction direction : Direction.values()) {
+            if ((connections & (1 << direction.ordinal())) == 0) continue;
+            switch (direction) {
+                case DOWN -> box(c,pose,light,.4375F,0,.4375F,.5625F,.375F,.5625F);
+                case UP -> box(c,pose,light,.4375F,.625F,.4375F,.5625F,1,.5625F);
+                case NORTH -> box(c,pose,light,.4375F,.4375F,0,.5625F,.5625F,.375F);
+                case SOUTH -> box(c,pose,light,.4375F,.4375F,.625F,.5625F,.5625F,1);
+                case WEST -> box(c,pose,light,0,.4375F,.4375F,.375F,.5625F,.5625F);
+                case EAST -> box(c,pose,light,.625F,.4375F,.4375F,1,.5625F,.5625F);
+            }
+        }
     }
 
     static void framedWireOverlay(
             VertexConsumer c,
             PoseStack.Pose pose,
-            int light
+            int light,
+            int connections
     ) {
         float e = .0015F;
         box(
@@ -121,6 +194,17 @@ final class RenderGeometry {
                 .375F-e,.375F-e,.375F-e,
                 .625F+e,.625F+e,.625F+e
         );
+        for (Direction direction : Direction.values()) {
+            if ((connections & (1 << direction.ordinal())) == 0) continue;
+            switch (direction) {
+                case DOWN -> box(c,pose,light,.4375F-e,0,.4375F-e,.5625F+e,.375F,.5625F+e);
+                case UP -> box(c,pose,light,.4375F-e,.625F,.4375F-e,.5625F+e,1,.5625F+e);
+                case NORTH -> box(c,pose,light,.4375F-e,.4375F-e,0,.5625F+e,.5625F+e,.375F);
+                case SOUTH -> box(c,pose,light,.4375F-e,.4375F-e,.625F,.5625F+e,.5625F+e,1);
+                case WEST -> box(c,pose,light,0,.4375F-e,.4375F-e,.375F,.5625F+e,.5625F+e);
+                case EAST -> box(c,pose,light,.625F,.4375F-e,.4375F-e,1,.5625F+e,.5625F+e);
+            }
+        }
     }
 
     private static void orientedQuad(
