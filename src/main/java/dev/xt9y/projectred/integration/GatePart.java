@@ -416,9 +416,13 @@ public final class GatePart extends Part {
                     int next = 1 << (analog & 0xF);
                     if (bundleOutput0 != next) schedule(owner, 2);
                 } else {
-                    bundleInput0 = BundledSignals.packDigital(owner.gateBundledInput(this, 0));
-                    int analog = mostSignificantBit(bundleInput0);
-                    if ((state2 & 0xF) != analog) schedule(owner, 2);
+                    int nextInput = BundledSignals.packDigital(
+                            owner.gateBundledInput(this, 0)
+                    );
+                    if (bundleInput0 != nextInput) {
+                        bundleInput0 = nextInput;
+                        schedule(owner, 2);
+                    }
                 }
             }
             case BUS_INPUT_PANEL -> {
@@ -434,6 +438,10 @@ public final class GatePart extends Part {
     }
 
     private void onChange(MultipartBlockEntity owner) {
+        if (type == GateType.REPEATER && scheduledAt >= 0) {
+            return;
+        }
+
         int mask = inputMask();
         int input = owner.gateInput(this, mask | feedbackMask());
         int oldInput = state & 0xF;
