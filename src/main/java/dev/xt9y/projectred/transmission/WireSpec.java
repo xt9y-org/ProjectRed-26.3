@@ -34,18 +34,18 @@ public record WireSpec(String id, WireFamily family, int color, boolean framed) 
         for (DyeColor c : DyeColor.values()) {
             specs.add(new WireSpec(c.getName() + "_insulated_wire", WireFamily.INSULATED, c.getId(), false));
         }
-        specs.add(new WireSpec("bundled_cable", WireFamily.BUNDLED, -1, false));
+        specs.add(new WireSpec("neutral_bundled_wire", WireFamily.BUNDLED, -1, false));
         for (DyeColor c : DyeColor.values()) {
-            specs.add(new WireSpec(c.getName() + "_bundled_cable", WireFamily.BUNDLED, c.getId(), false));
+            specs.add(new WireSpec(c.getName() + "_bundled_wire", WireFamily.BUNDLED, c.getId(), false));
         }
 
         specs.add(new WireSpec("framed_red_alloy_wire", WireFamily.RED_ALLOY, -1, true));
         for (DyeColor c : DyeColor.values()) {
-            specs.add(new WireSpec("framed_" + c.getName() + "_insulated_wire", WireFamily.INSULATED, c.getId(), true));
+            specs.add(new WireSpec(c.getName() + "_framed_insulated_wire", WireFamily.INSULATED, c.getId(), true));
         }
-        specs.add(new WireSpec("framed_bundled_cable", WireFamily.BUNDLED, -1, true));
+        specs.add(new WireSpec("neutral_framed_bundled_wire", WireFamily.BUNDLED, -1, true));
         for (DyeColor c : DyeColor.values()) {
-            specs.add(new WireSpec("framed_" + c.getName() + "_bundled_cable", WireFamily.BUNDLED, c.getId(), true));
+            specs.add(new WireSpec(c.getName() + "_framed_bundled_wire", WireFamily.BUNDLED, c.getId(), true));
         }
         return Collections.unmodifiableList(specs);
     }
