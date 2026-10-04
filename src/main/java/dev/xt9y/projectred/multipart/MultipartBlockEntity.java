@@ -1601,22 +1601,14 @@ public final class MultipartBlockEntity extends BlockEntity {
 
         for (Direction outputSide : Direction.values()) {
             BlockPos poweredPos = worldPosition.relative(outputSide);
-
             if (notified.add(poweredPos.asLong())) {
-                level.updateNeighborsAt(poweredPos, sourceState.getBlock());
-            }
-
-            for (Direction around : Direction.values()) {
-                if (around == outputSide.getOpposite()) continue;
-
-                BlockPos neighbor = poweredPos.relative(around);
-                if (notified.add(neighbor.asLong())) {
-                    level.neighborChanged(
-                            neighbor,
-                            sourceState.getBlock(),
-                            poweredPos
-                    );
-                }
+                // updateNeighborsAt() notifies every block surrounding the
+                // adjacent output block, which is the second ring that
+                // ProjectRed explicitly updates for strong-power changes.
+                level.updateNeighborsAt(
+                        poweredPos,
+                        sourceState.getBlock()
+                );
             }
         }
     }
