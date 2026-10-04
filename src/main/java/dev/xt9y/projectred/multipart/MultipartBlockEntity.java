@@ -549,6 +549,14 @@ public final class MultipartBlockEntity extends BlockEntity {
         return da.getAxis() != db.getAxis();
     }
 
+    private static boolean internalWireMeetsDirection(
+            WirePart wire,
+            Direction direction
+    ) {
+        return wire.center()
+                || Direction.values()[wire.slot()] == direction;
+    }
+
     public int visualWireConnections(WirePart receiver) {
         if (level == null) return 0;
 
@@ -657,7 +665,9 @@ public final class MultipartBlockEntity extends BlockEntity {
 
         for (Part p : parts()) {
             if (p == receiver) continue;
-            if (p instanceof WirePart wire && wire.spec().family() != WireFamily.BUNDLED) {
+            if (p instanceof WirePart wire
+                    && wire.spec().family() != WireFamily.BUNDLED
+                    && internalWireMeetsDirection(wire, direction)) {
                 max = Math.max(max, wire.signal());
             } else if (p instanceof GatePart gate) {
                 max = Math.max(max, gateRawOutputToward(gate, direction.getOpposite()));
@@ -707,7 +717,7 @@ public final class MultipartBlockEntity extends BlockEntity {
 
         for (Part p : parts()) {
             if (p == receiver) continue;
-            if (p instanceof WirePart wire) {
+            if (p instanceof WirePart wire && internalWireMeetsDirection(wire, direction)) {
                 out = BundledSignals.raise(out, wire.bundledSignal(), false);
             } else if (p instanceof GatePart gate) {
                 out = BundledSignals.raise(
@@ -746,8 +756,12 @@ public final class MultipartBlockEntity extends BlockEntity {
         int max = 0;
         for (Part p : parts()) {
             if (p == receiver) continue;
-            if (p instanceof WirePart wire) max = Math.max(max, wire.vanillaSignal());
-            if (p instanceof GatePart other) max = Math.max(max, gateOutputToward(other, worldDir.getOpposite()));
+            if (p instanceof WirePart wire && internalWireMeetsDirection(wire, worldDir)) {
+                max = Math.max(max, wire.vanillaSignal());
+            }
+            if (p instanceof GatePart other) {
+                max = Math.max(max, gateOutputToward(other, worldDir.getOpposite()));
+            }
         }
         if (level != null) {
             BlockPos np = worldPosition.relative(worldDir);
@@ -787,7 +801,10 @@ public final class MultipartBlockEntity extends BlockEntity {
     public int rawSignal(Direction toward) {
         int max = 0;
         for (Part p : parts()) {
-            if (p instanceof WirePart wire && wire.spec().family() != WireFamily.BUNDLED) {
+            if (!partConnectsToward(p, toward)) continue;
+
+            if (p instanceof WirePart wire
+                    && wire.spec().family() != WireFamily.BUNDLED) {
                 max = Math.max(max, wire.signal());
             } else if (p instanceof GatePart gate) {
                 max = Math.max(max, gateRawOutputToward(gate, toward));
@@ -799,10 +816,16 @@ public final class MultipartBlockEntity extends BlockEntity {
     public int[] bundledSignal(Direction toward) {
         int[] out = new int[16];
         for (Part p : parts()) {
+            if (!partConnectsToward(p, toward)) continue;
+
             if (p instanceof WirePart wire) {
                 out = BundledSignals.raise(out, wire.bundledSignal(), false);
             } else if (p instanceof GatePart gate) {
-                out = BundledSignals.raise(out, gateBundledOutputToward(gate, toward), false);
+                out = BundledSignals.raise(
+                        out,
+                        gateBundledOutputToward(gate, toward),
+                        false
+                );
             }
         }
         return out;
@@ -811,8 +834,15 @@ public final class MultipartBlockEntity extends BlockEntity {
     public int vanillaSignal(Direction toward) {
         int max = 0;
         for (Part p : parts()) {
-            if (p instanceof WirePart wire && wire.spec().family() != WireFamily.BUNDLED) max = Math.max(max, wire.vanillaSignal());
-            if (p instanceof GatePart gate) max = Math.max(max, gateOutputToward(gate, toward));
+            if (!partConnectsToward(p, toward)) continue;
+
+            if (p instanceof WirePart wire
+                    && wire.spec().family() != WireFamily.BUNDLED) {
+                max = Math.max(max, wire.vanillaSignal());
+            }
+            if (p instanceof GatePart gate) {
+                max = Math.max(max, gateOutputToward(gate, toward));
+            }
         }
         return max;
     }
