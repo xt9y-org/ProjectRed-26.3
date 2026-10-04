@@ -63,6 +63,49 @@ for path in list(ASSETS.rglob("*.json")) + list(DATA.rglob("*.json")):
     except Exception as exc:
         errors.append(f"invalid JSON: {path.relative_to(ROOT)}: {exc}")
 
+# Validate ProjectRed item model references and texture references. This catches
+# client-only missing-model/missing-texture failures that a dedicated server
+# cannot see.
+for item_path in (ASSETS / "items").glob("*.json"):
+    try:
+        item_data = json.loads(item_path.read_text())
+    except Exception:
+        continue
+
+    model = item_data.get("model", {}).get("model")
+    if isinstance(model, str) and model.startswith("projectred:"):
+        model_path = ASSETS / "models" / (model.split(":", 1)[1] + ".json")
+        if not model_path.is_file():
+            errors.append(
+                f"missing ProjectRed model {model} referenced by "
+                f"{item_path.relative_to(ROOT)}"
+            )
+
+for model_path in (ASSETS / "models").rglob("*.json"):
+    try:
+        model_data = json.loads(model_path.read_text())
+    except Exception:
+        continue
+
+    for texture in model_data.get("textures", {}).values():
+        if not isinstance(texture, str) or not texture.startswith("projectred:"):
+            continue
+        texture_path = ASSETS / "textures" / (texture.split(":", 1)[1] + ".png")
+        if not texture_path.is_file():
+            errors.append(
+                f"missing ProjectRed texture {texture} referenced by "
+                f"{model_path.relative_to(ROOT)}"
+            )
+
+# All resource paths must be legal Minecraft identifiers.
+legal_path = re.compile(r"^[a-z0-9/._-]+$")
+for base in (ASSETS, DATA):
+    for path in base.rglob("*"):
+        if path.is_file():
+            relative = path.relative_to(base).as_posix()
+            if not legal_path.fullmatch(relative):
+                errors.append(f"illegal resource path: {path.relative_to(ROOT)}")
+
 item_dir = ASSETS / "items"
 item_ids = {p.stem for p in item_dir.glob("*.json")}
 expected_items = WIRES | GATES | CORE | {"screwdriver"}
