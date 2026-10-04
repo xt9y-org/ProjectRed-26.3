@@ -86,6 +86,14 @@ public final class GatePart extends Part {
         return counterMax;
     }
 
+    public int counterIncrement() {
+        return counterIncrement;
+    }
+
+    public int counterDecrement() {
+        return counterDecrement;
+    }
+
     public int segmentMask() {
         return bundleInput0 & 0xFFFF;
     }
@@ -132,6 +140,20 @@ public final class GatePart extends Part {
         counterValue = Math.min(counterValue, counterMax);
         counterIncrement = Math.min(counterIncrement, counterMax);
         counterDecrement = Math.min(counterDecrement, counterMax);
+    }
+
+    public void adjustCounterIncrement(int delta) {
+        counterIncrement = Math.max(
+                1,
+                Math.min(counterMax, counterIncrement + delta)
+        );
+    }
+
+    public void adjustCounterDecrement(int delta) {
+        counterDecrement = Math.max(
+                1,
+                Math.min(counterMax, counterDecrement + delta)
+        );
     }
 
     public void activate() {

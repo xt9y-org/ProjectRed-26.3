@@ -8,6 +8,7 @@ public final class ProjectRed263Client implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         MultipartClientInteraction.initialize();
+        GateConfigClient.initialize();
 
         BlockEntityRendererRegistry.register(
                 PRContent.MULTIPART_BE,

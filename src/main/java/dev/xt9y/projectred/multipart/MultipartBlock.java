@@ -3,6 +3,7 @@ package dev.xt9y.projectred.multipart;
 import dev.xt9y.projectred.content.PRContent;
 import dev.xt9y.projectred.integration.GatePart;
 import dev.xt9y.projectred.integration.GateType;
+import dev.xt9y.projectred.network.PRNetworking;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.core.BlockPos;
@@ -83,12 +84,16 @@ public final class MultipartBlock extends BaseEntityBlock {
                 gate.activate();
             } else if (gate.type() == GateType.TIMER
                     || gate.type() == GateType.SEQUENCER
-                    || gate.type() == GateType.STATE_CELL) {
-                // Until the dedicated ProjectRed timer GUI is ported, right click
-                // keeps the original configurable behavior available in-world.
-                gate.adjustTimer(player.isCrouching() ? -20 : 20);
-            } else if (gate.type() == GateType.COUNTER) {
-                gate.adjustCounterMax(player.isCrouching() ? -1 : 1);
+                    || gate.type() == GateType.STATE_CELL
+                    || gate.type() == GateType.COUNTER) {
+                if (player instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {
+                    PRNetworking.openGateConfig(
+                            serverPlayer,
+                            multipart,
+                            slot,
+                            gate
+                    );
+                }
             } else {
                 return InteractionResult.PASS;
             }
