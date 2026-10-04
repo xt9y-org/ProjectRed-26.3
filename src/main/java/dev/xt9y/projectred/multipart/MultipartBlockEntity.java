@@ -101,6 +101,29 @@ public final class MultipartBlockEntity extends BlockEntity {
         return best;
     }
 
+    public int panelBit(GatePart gate, Vec3 hit) {
+        Direction attachment = Direction.values()[gate.slot()];
+        Direction right = localToWorld(attachment, gate.rotation(), 1);
+        Direction down = localToWorld(attachment, gate.rotation(), 2);
+
+        double cx = hit.x - worldPosition.getX() - 0.5;
+        double cy = hit.y - worldPosition.getY() - 0.5;
+        double cz = hit.z - worldPosition.getZ() - 0.5;
+
+        double u = 0.5
+                + cx * right.getStepX()
+                + cy * right.getStepY()
+                + cz * right.getStepZ();
+        double v = 0.5
+                + cx * down.getStepX()
+                + cy * down.getStepY()
+                + cz * down.getStepZ();
+
+        int column = Math.max(0, Math.min(3, (int) Math.floor(u * 4.0)));
+        int row = Math.max(0, Math.min(3, (int) Math.floor(v * 4.0)));
+        return row * 4 + column;
+    }
+
     private boolean hasSupport(int slot) {
         Direction attachment = Direction.values()[slot];
         BlockPos support = worldPosition.relative(attachment);
