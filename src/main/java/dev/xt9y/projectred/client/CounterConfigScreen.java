@@ -64,8 +64,6 @@ public final class CounterConfigScreen extends Screen {
             case 0 -> {
                 maximum = Math.max(1, Math.min(32767, maximum + delta));
                 value = Math.min(value, maximum);
-                increment = Math.min(increment, maximum);
-                decrement = Math.min(decrement, maximum);
             }
             case 1 -> increment = Math.max(
                     1,

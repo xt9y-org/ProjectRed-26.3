@@ -133,15 +133,26 @@ public final class GatePart extends Part {
     }
 
     public void adjustTimer(int delta) {
-        timerPeriod = Math.max(4, Math.min(20 * 60 * 60, timerPeriod + delta));
-        pointerStart = -1;
+        // Upstream changes the configured maximum in-place. A running timer
+        // keeps its elapsed pointer and naturally fires sooner/later against
+        // the new limit.
+        timerPeriod = Math.max(
+                4,
+                Math.min(20 * 60 * 60, timerPeriod + delta)
+        );
     }
 
     public void adjustCounterMax(int delta) {
+        int oldValue = counterValue;
         counterMax = Math.max(1, Math.min(32767, counterMax + delta));
         counterValue = Math.min(counterValue, counterMax);
-        counterIncrement = Math.min(counterIncrement, counterMax);
-        counterDecrement = Math.min(counterDecrement, counterMax);
+
+        // Counter increments/decrements are independent settings upstream;
+        // changing max does not rewrite them. A value clamp does require the
+        // normal delayed output update.
+        if (counterValue != oldValue) {
+            scheduledAt = 0;
+        }
     }
 
     public void adjustCounterIncrement(int delta) {
