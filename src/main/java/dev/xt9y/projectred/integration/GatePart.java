@@ -237,6 +237,53 @@ public final class GatePart extends Part {
         return packed == 0 ? null : BundledSignals.unpackDigital(packed);
     }
 
+    public void onAdded(MultipartBlockEntity owner) {
+        long time = owner.getLevel() == null
+                ? 0
+                : owner.getLevel().getGameTime();
+
+        // SimpleGatePart::gateLogicSetup() computes the initial output
+        // immediately on placement rather than waiting for its first delayed
+        // tick. This matters for normally-high gates such as NOT/NOR/NAND/XNOR
+        // and for the decoding randomizer's default output.
+        if (isSimpleGate()) {
+            int mask = inputMask();
+            int input = owner.gateInput(this, mask);
+            int output = calcOutput(input & mask) & outputMask();
+            if (output != 0) {
+                state = output << 4;
+            }
+        }
+
+        // ProjectRed starts the timer pointer during gate setup.
+        if (type == GateType.TIMER && owner.getLevel() != null) {
+            pointerStart = time;
+        }
+
+        // GatePart::onAdded() always follows setup with an onChange pass.
+        switch (type) {
+            case LIGHT_SENSOR -> tickLightSensor(owner);
+            case RAIN_SENSOR -> tickRainSensor(owner);
+            case TIMER -> tickTimer(owner, time);
+            case SEQUENCER -> tickSequencer(owner);
+            case NULL_CELL, INVERT_CELL, BUFFER_CELL, AND_CELL, TRANSPARENT_LATCH_CELL ->
+                    tickArrayGate(owner);
+            case BUS_TRANSCEIVER, BUS_RANDOMIZER, BUS_CONVERTER, BUS_INPUT_PANEL, SEGMENT_DISPLAY ->
+                    tickBundledGate(owner);
+            default -> onChange(owner);
+        }
+    }
+
+    private boolean isSimpleGate() {
+        return switch (type) {
+            case OR, NOR, NOT, AND, NAND, XOR, XNOR, BUFFER,
+                    MULTIPLEXER, PULSE, REPEATER, RANDOMIZER,
+                    TRANSPARENT_LATCH, LIGHT_SENSOR, RAIN_SENSOR,
+                    DEC_RANDOMIZER -> true;
+            default -> false;
+        };
+    }
+
     public boolean tick(MultipartBlockEntity owner) {
         String before = encode();
         long time = owner.getLevel() == null ? 0 : owner.getLevel().getGameTime();

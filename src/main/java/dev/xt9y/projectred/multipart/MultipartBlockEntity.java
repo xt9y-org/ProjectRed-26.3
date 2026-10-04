@@ -149,6 +149,13 @@ public final class MultipartBlockEntity extends BlockEntity {
     public boolean add(Part part) {
         if (part == null || hasSlot(part.slot())) return false;
         if (part.center()) center = part; else face[part.slot()] = part;
+
+        if (part instanceof GatePart gate
+                && level != null
+                && !level.isClientSide()) {
+            gate.onAdded(this);
+        }
+
         syncChanged();
         return true;
     }
