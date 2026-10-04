@@ -43,8 +43,7 @@ public final class ScrewdriverItem extends Item {
                 );
             }
 
-            be.setChanged();
-            context.getLevel().sendBlockUpdated(context.getClickedPos(), context.getLevel().getBlockState(context.getClickedPos()), context.getLevel().getBlockState(context.getClickedPos()), 3);
+            be.markPartChanged();
         }
         return InteractionResult.SUCCESS;
     }
