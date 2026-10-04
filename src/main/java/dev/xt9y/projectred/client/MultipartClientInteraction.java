@@ -34,8 +34,12 @@ public final class MultipartClientInteraction {
                         return InteractionResult.PASS;
                     }
 
+                    // Tell the server which multipart is being mined, but
+                    // leave the vanilla attack untouched so normal mining
+                    // progress/hardness still applies. The server intercepts
+                    // the completed block break and removes only this slot.
                     ClientPlayNetworking.send(new MultipartBreakPayload(pos, slot));
-                    return InteractionResult.SUCCESS;
+                    return InteractionResult.PASS;
                 }
         );
     }
