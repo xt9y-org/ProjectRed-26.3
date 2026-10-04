@@ -712,8 +712,19 @@ public final class MultipartBlockEntity extends BlockEntity {
             Direction expectedAttachment
     ) {
         if (expectedAttachment == null) {
-            if (!(center instanceof WirePart wire)
-                    || !receiver.redwireCompatible(wire.spec())) {
+            if (!(center instanceof WirePart wire)) {
+                return 0;
+            }
+
+            if (wire.spec().family() == WireFamily.BUNDLED
+                    && receiver.family() == WireFamily.INSULATED) {
+                return Math.max(
+                        0,
+                        wire.bundled()[receiver.color()] - 1
+                );
+            }
+
+            if (!receiver.redwireCompatible(wire.spec())) {
                 return 0;
             }
             return Math.max(0, wire.signal() - 1);
