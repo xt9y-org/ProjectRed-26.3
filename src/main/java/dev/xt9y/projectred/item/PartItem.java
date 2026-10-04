@@ -3,6 +3,7 @@ package dev.xt9y.projectred.item;
 import dev.xt9y.projectred.content.PRContent;
 import dev.xt9y.projectred.multipart.MultipartBlockEntity;
 import dev.xt9y.projectred.multipart.Part;
+import dev.xt9y.projectred.multipart.PlacementRules;
 import dev.xt9y.projectred.transmission.WirePart;
 import dev.xt9y.projectred.transmission.WireSpec;
 import dev.xt9y.projectred.integration.GatePart;
@@ -107,11 +108,16 @@ public final class PartItem extends Item {
         return 0;
     }
 
-    private static boolean canSupport(Level level, BlockPos target, int slot) {
+    private boolean canSupport(Level level, BlockPos target, int slot) {
         if (slot == Part.CENTER_SLOT) return true;
+
         Direction attachment = Direction.values()[slot];
         BlockPos support = target.relative(attachment);
-        return level.getBlockState(support).isFaceSturdy(level, support, attachment.getOpposite());
+        Direction supportFace = attachment.getOpposite();
+
+        return wire != null
+                ? PlacementRules.canPlaceWireOnSide(level, support, supportFace)
+                : PlacementRules.canPlaceGateOnSide(level, support, supportFace);
     }
 
     private static void consume(Player player, UseOnContext context) {

@@ -47,7 +47,7 @@ public final class MultipartBlockEntity extends BlockEntity {
         List<Integer> unsupported = new ArrayList<>();
 
         for (Part part : be.parts()) {
-            if (!part.center() && !be.hasSupport(part.slot())) {
+            if (!part.center() && !be.hasSupport(part)) {
                 unsupported.add(part.slot());
                 continue;
             }
@@ -218,10 +218,28 @@ public final class MultipartBlockEntity extends BlockEntity {
         return row * 4 + column;
     }
 
-    private boolean hasSupport(int slot) {
-        Direction attachment = Direction.values()[slot];
+    private boolean hasSupport(Part part) {
+        if (level == null || part.center()) return true;
+
+        Direction attachment = Direction.values()[part.slot()];
         BlockPos support = worldPosition.relative(attachment);
-        return level != null && level.getBlockState(support).isFaceSturdy(level, support, attachment.getOpposite());
+        Direction supportFace = attachment.getOpposite();
+
+        if (part instanceof WirePart) {
+            return PlacementRules.canPlaceWireOnSide(
+                    level,
+                    support,
+                    supportFace
+            );
+        }
+        if (part instanceof GatePart) {
+            return PlacementRules.canPlaceGateOnSide(
+                    level,
+                    support,
+                    supportFace
+            );
+        }
+        return false;
     }
 
     public VoxelShape shape() {
