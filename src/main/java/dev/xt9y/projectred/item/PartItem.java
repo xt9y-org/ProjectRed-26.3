@@ -42,6 +42,7 @@ public final class PartItem extends Item {
         if (level.getBlockEntity(clicked) instanceof MultipartBlockEntity existing) {
             int slot = slotFor(clickedFace);
             Part candidate = create(slot, context);
+            existing.preparePlacement(candidate);
             if (canSupport(level, clicked, slot)
                     && existing.canAdd(candidate)) {
                 if (!level.isClientSide()
@@ -62,6 +63,7 @@ public final class PartItem extends Item {
             }
             if (level.getBlockEntity(target) instanceof MultipartBlockEntity be) {
                 Part candidate = create(slot, context);
+                be.preparePlacement(candidate);
                 if (be.add(candidate)) {
                     consume(context.getPlayer(), context);
                     return InteractionResult.SUCCESS;
