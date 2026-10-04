@@ -46,6 +46,7 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
             int gateShape,
             int gateRotation,
             int gateState,
+            boolean arrayCell,
             int bundledMask,
             int panelMask
     ) {}
@@ -82,6 +83,7 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
                         0,
                         0,
                         0,
+                        false,
                         0,
                         0
                 ));
@@ -97,6 +99,7 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
                         gate.shape(),
                         gate.rotation(),
                         gate.state(),
+                        gate.isArrayCell(),
                         gate.segmentMask(),
                         gate.panelMask()
                 ));
@@ -166,19 +169,35 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
 
             Direction attachment = Direction.values()[part.slot];
 
+            Identifier baseTexture = part.arrayCell
+                    ? arrayCellBase(part.gateType)
+                    : GATE_BASE;
+
             collector.order(order++).submitCustomGeometry(
                     poseStack,
-                    RenderTypes.entityCutout(GATE_BASE),
-                    (pose, consumer) -> RenderGeometry.gateBoard(
-                            consumer,
-                            pose,
-                            state.lightCoords,
-                            attachment
-                    )
+                    RenderTypes.entityCutout(baseTexture),
+                    (pose, consumer) -> {
+                        if (part.arrayCell) {
+                            RenderGeometry.arrayGateBody(
+                                    consumer,
+                                    pose,
+                                    state.lightCoords,
+                                    attachment
+                            );
+                        } else {
+                            RenderGeometry.gateBoard(
+                                    consumer,
+                                    pose,
+                                    state.lightCoords,
+                                    attachment
+                            );
+                        }
+                    }
             );
 
             Identifier overlay = gateOverlay(part.gateType, part.gateShape, part.gateState);
             if (overlay != null) {
+                float depth = part.arrayCell ? .751F : .126F;
                 collector.order(order++).submitCustomGeometry(
                         poseStack,
                         RenderTypes.entityCutout(overlay),
@@ -187,7 +206,8 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
                                 pose,
                                 state.lightCoords,
                                 attachment,
-                                part.gateRotation
+                                part.gateRotation,
+                                depth
                         )
                 );
             }
@@ -318,6 +338,17 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
         };
 
         return name == null ? null : projectRed("integration/surface/" + name);
+    }
+
+    private static Identifier arrayCellBase(GateType type) {
+        String path = switch (type) {
+            case NULL_CELL -> "integration/block/null_cell";
+            case AND_CELL -> "integration/block/and_cell";
+            case TRANSPARENT_LATCH_CELL -> "integration/block/transparent_latch_cell";
+            case INVERT_CELL, BUFFER_CELL -> "integration/block/logic_cell";
+            default -> "integration/block/base";
+        };
+        return projectRed(path);
     }
 
     public static String gateItemSurface(GateType type) {
