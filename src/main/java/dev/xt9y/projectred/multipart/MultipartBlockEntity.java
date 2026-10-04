@@ -1475,7 +1475,16 @@ public final class MultipartBlockEntity extends BlockEntity {
 
     private int wireWeakSignalToward(WirePart wire, Direction toward) {
         if (wire.spec().family() == WireFamily.RED_ALLOY) {
-            // Uninsulated ProjectRed wire deliberately weak-powers all sides.
+            // Face red-alloy weak-powers every side except a tangent side
+            // whose connection is consumed by another part inside this same
+            // multipart. Framed red-alloy has no such face-slot exclusion.
+            if (!wire.center()) {
+                Direction attachment = Direction.values()[wire.slot()];
+                if (toward.getAxis() != attachment.getAxis()
+                        && hasInsideWireConnection(wire, toward)) {
+                    return 0;
+                }
+            }
             return wire.vanillaSignal();
         }
 
