@@ -2,6 +2,7 @@ package dev.xt9y.projectred.client;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import dev.xt9y.projectred.integration.GatePart;
+import dev.xt9y.projectred.integration.GateType;
 import dev.xt9y.projectred.multipart.MultipartBlockEntity;
 import dev.xt9y.projectred.multipart.Part;
 import dev.xt9y.projectred.transmission.WireFamily;
@@ -21,9 +22,9 @@ import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 
 public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlockEntity, MultipartRenderer.State> {
-    private static final Identifier REDSTONE = tex("redstone_block");
-    private static final Identifier STONE = tex("smooth_stone");
-    private static final Identifier POWERED = tex("redstone_block");
+    private static final Identifier GATE_BASE = projectRed("integration/block/base");
+    private static final Identifier WIRE_BORDER = projectRed("integration/block/wire_material_border");
+    private static final Identifier WIRE_ON = projectRed("integration/block/wire_material_on");
 
     public MultipartRenderer(BlockEntityRendererProvider.Context context) {}
 
@@ -36,7 +37,11 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
             int slot,
             WireFamily family,
             int color,
-            boolean powered
+            boolean powered,
+            GateType gateType,
+            int gateShape,
+            int gateRotation,
+            int gateState
     ) {}
 
     @Override
@@ -54,34 +59,70 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
     ) {
         BlockEntityRenderState.extractBase(blockEntity, state, breakProgress);
         List<Visual> out = new ArrayList<>();
+
         for (Part part : blockEntity.parts()) {
             if (part instanceof WirePart wire) {
                 boolean powered = wire.spec().family() == WireFamily.BUNDLED
                         ? java.util.Arrays.stream(wire.bundled()).anyMatch(v -> v > 0)
                         : wire.signal() > 0;
-                out.add(new Visual(true, part.slot(), wire.spec().family(), wire.spec().color(), powered));
+                out.add(new Visual(
+                        true,
+                        part.slot(),
+                        wire.spec().family(),
+                        wire.spec().color(),
+                        powered,
+                        null,
+                        0,
+                        0,
+                        0
+                ));
             } else if (part instanceof GatePart gate) {
-                out.add(new Visual(false, part.slot(), null, -1, (gate.state() & 0xF0) != 0));
+                out.add(new Visual(
+                        false,
+                        part.slot(),
+                        null,
+                        -1,
+                        (gate.state() & 0xF0) != 0,
+                        gate.type(),
+                        gate.shape(),
+                        gate.rotation(),
+                        gate.state()
+                ));
             }
         }
+
         state.parts = out;
     }
 
     @Override
-    public void submit(State state, PoseStack poseStack, SubmitNodeCollector collector, CameraRenderState cameraState) {
+    public void submit(
+            State state,
+            PoseStack poseStack,
+            SubmitNodeCollector collector,
+            CameraRenderState cameraState
+    ) {
         int order = 1;
+
         for (Visual part : state.parts) {
             if (part.wire) {
                 Identifier texture = wireTexture(part);
+
                 collector.order(order++).submitCustomGeometry(
                         poseStack,
                         RenderTypes.entityCutout(texture),
                         (pose, consumer) -> {
                             if (part.slot == Part.CENTER_SLOT) {
-                                RenderGeometry.framedWire(consumer, pose, state.lightCoords);
+                                RenderGeometry.framedWire(
+                                        consumer,
+                                        pose,
+                                        state.lightCoords
+                                );
                             } else {
-                                float width = part.family == WireFamily.BUNDLED ? .50F :
-                                        part.family == WireFamily.INSULATED ? .375F : .25F;
+                                float width = part.family == WireFamily.BUNDLED
+                                        ? .50F
+                                        : part.family == WireFamily.INSULATED
+                                                ? .375F
+                                                : .25F;
                                 RenderGeometry.facePart(
                                         consumer,
                                         pose,
@@ -93,41 +134,164 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
                             }
                         }
                 );
-            } else {
-                Direction attachment = Direction.values()[part.slot];
-                collector.order(order++).submitCustomGeometry(
-                        poseStack,
-                        RenderTypes.entityCutout(STONE),
-                        (pose, consumer) -> RenderGeometry.gateBoard(consumer, pose, state.lightCoords, attachment)
-                );
-                if (part.powered) {
+
+                if (part.slot == Part.CENTER_SLOT) {
                     collector.order(order++).submitCustomGeometry(
                             poseStack,
-                            RenderTypes.entityCutout(POWERED),
-                            (pose, consumer) -> RenderGeometry.facePart(
-                                    consumer, pose, 0x00F000F0, attachment, .25F, .14F)
+                            RenderTypes.entityCutout(WIRE_BORDER),
+                            (pose, consumer) -> RenderGeometry.framedWireOverlay(
+                                    consumer,
+                                    pose,
+                                    state.lightCoords
+                            )
                     );
                 }
+                continue;
+            }
+
+            Direction attachment = Direction.values()[part.slot];
+
+            collector.order(order++).submitCustomGeometry(
+                    poseStack,
+                    RenderTypes.entityCutout(GATE_BASE),
+                    (pose, consumer) -> RenderGeometry.gateBoard(
+                            consumer,
+                            pose,
+                            state.lightCoords,
+                            attachment
+                    )
+            );
+
+            Identifier overlay = gateOverlay(part.gateType, part.gateShape, part.gateState);
+            if (overlay != null) {
+                collector.order(order++).submitCustomGeometry(
+                        poseStack,
+                        RenderTypes.entityCutout(overlay),
+                        (pose, consumer) -> RenderGeometry.gateSurface(
+                                consumer,
+                                pose,
+                                state.lightCoords,
+                                attachment,
+                                part.gateRotation
+                        )
+                );
+            }
+
+            if (part.powered) {
+                collector.order(order++).submitCustomGeometry(
+                        poseStack,
+                        RenderTypes.entityCutout(WIRE_ON),
+                        (pose, consumer) -> RenderGeometry.gateIndicator(
+                                consumer,
+                                pose,
+                                0x00F000F0,
+                                attachment
+                        )
+                );
             }
         }
     }
 
     private static Identifier wireTexture(Visual part) {
-        if (part.family == WireFamily.RED_ALLOY) return REDSTONE;
+        if (part.family == WireFamily.RED_ALLOY) {
+            return projectRed("transmission/red_alloy_wire");
+        }
+
         String color = colorName(part.color);
-        return tex(color + "_concrete");
+
+        if (part.family == WireFamily.BUNDLED) {
+            return projectRed(
+                    "transmission/"
+                            + (part.color < 0 ? "neutral" : color)
+                            + "_bundled_wire"
+            );
+        }
+
+        return projectRed(
+                "transmission/"
+                        + color
+                        + "_insulated_wire_"
+                        + (part.powered ? "on" : "off")
+        );
+    }
+
+    public static Identifier gateOverlay(GateType type, int shape, int state) {
+        if (type == null) return null;
+
+        String name = switch (type) {
+            case OR -> variant("or", shape, 4);
+            case NOR -> variant("nor", shape, 4);
+            case NOT -> variant("not", shape, 4);
+            case AND -> variant("and", shape, 4);
+            case NAND -> variant("nand", shape, 4);
+            case XOR -> variant("xor", shape, 4);
+            case XNOR -> variant("xnor", shape, 5);
+            case BUFFER -> variant("buffer", shape, 4);
+            case MULTIPLEXER -> variant("multiplexer", shape, 6);
+            case PULSE -> variant("pulse", shape, 3);
+            case REPEATER -> variant("repeater", shape, 2);
+            case RANDOMIZER -> variant("rand", shape, 7);
+            case SR_LATCH -> (shape & 2) == 0
+                    ? variant("rslatch", shape, 2)
+                    : variant("rslatch2", shape, 4);
+            case TOGGLE_LATCH -> variant("toglatch", shape, 2);
+            case TRANSPARENT_LATCH -> variant("translatch", shape, 5);
+            case LIGHT_SENSOR -> "lightsensor-0";
+            case RAIN_SENSOR -> "rainsensor-0";
+            case TIMER, SEQUENCER -> variant("time", shape, 3);
+            case COUNTER -> variant("count", shape, 2);
+            case STATE_CELL -> variant("statecell", shape, 5);
+            case SYNCHRONIZER -> variant("sync", shape, 6);
+            case BUS_TRANSCEIVER -> variant("busxcvr", shape, 2);
+            case NULL_CELL -> null;
+            case INVERT_CELL -> "invcell-0";
+            case BUFFER_CELL -> variant("buffcell", shape, 2);
+            case COMPARATOR -> variant("comparator", shape, 4);
+            case AND_CELL -> variant("andcell", shape, 2);
+            case BUS_RANDOMIZER -> variant(shape == 0 ? "busrand1" : "busrand2", shape, 2);
+            case BUS_CONVERTER -> variant("busconv", shape, 3);
+            case BUS_INPUT_PANEL -> "businput-0";
+            case TRANSPARENT_LATCH_CELL -> variant("transparent-latch-cell", shape, 5);
+            case SEGMENT_DISPLAY -> null;
+            case DEC_RANDOMIZER -> variant("decrand", shape, 6);
+        };
+
+        return name == null ? null : projectRed("integration/surface/" + name);
+    }
+
+    public static String gateItemSurface(GateType type) {
+        Identifier overlay = gateOverlay(type, 0, 0);
+        if (overlay == null) {
+            return switch (type) {
+                case NULL_CELL -> "projectred:integration/block/null_cell";
+                case SEGMENT_DISPLAY -> "projectred:integration/block/segment_display";
+                default -> "projectred:integration/block/base";
+            };
+        }
+        return "projectred:" + overlay.getPath()
+                .replaceFirst("^textures/", "")
+                .replaceFirst("\\.png$", "");
+    }
+
+    private static String variant(String base, int shape, int count) {
+        return base + "-" + Math.floorMod(shape, count);
     }
 
     private static String colorName(int color) {
         String[] names = {
-                "white","orange","magenta","light_blue","yellow","lime","pink","gray",
-                "light_gray","cyan","purple","blue","brown","green","red","black"
+                "white", "orange", "magenta", "light_blue",
+                "yellow", "lime", "pink", "gray",
+                "light_gray", "cyan", "purple", "blue",
+                "brown", "green", "red", "black"
         };
-        if (color < 0 || color >= names.length) return "gray";
+        if (color < 0 || color >= names.length) return "neutral";
         return names[color];
     }
 
-    private static Identifier tex(String path) {
-        return Identifier.fromNamespaceAndPath("minecraft", "textures/block/" + path + ".png");
+    private static Identifier projectRed(String path) {
+        return Identifier.fromNamespaceAndPath(
+                "projectred",
+                "textures/" + path + ".png"
+        );
     }
 }
