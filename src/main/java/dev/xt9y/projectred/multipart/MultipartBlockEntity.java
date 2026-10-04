@@ -329,7 +329,7 @@ public final class MultipartBlockEntity extends BlockEntity {
                     Direction toward = Direction.values()[receiver.slot()];
                     max = Math.max(
                             max,
-                            Math.max(0, gateRawOutputToward(gate, toward) - 1)
+                            gateRawOutputToward(gate, toward)
                     );
                 }
             }
@@ -346,12 +346,11 @@ public final class MultipartBlockEntity extends BlockEntity {
         BlockEntity neighbor = level.getBlockEntity(neighborPos);
 
         if (neighbor instanceof MultipartBlockEntity multipart) {
-            int raw = multipart.redwireToward(
+            return multipart.redwireToward(
                     direction.getOpposite(),
                     receiver.spec(),
                     expectedAttachment
             );
-            return Math.max(0, raw - 1);
         }
 
         BlockState neighborState = level.getBlockState(neighborPos);
@@ -482,15 +481,20 @@ public final class MultipartBlockEntity extends BlockEntity {
 
                 if (wire.spec().family() == WireFamily.BUNDLED
                         && receiver.family() == WireFamily.INSULATED) {
-                    max = Math.max(max, wire.bundled()[receiver.color()]);
+                    max = Math.max(
+                            max,
+                            Math.max(0, wire.bundled()[receiver.color()] - 1)
+                    );
                 } else if (receiver.redwireCompatible(wire.spec())) {
-                    max = Math.max(max, wire.signal());
+                    max = Math.max(max, Math.max(0, wire.signal() - 1));
                 }
             } else if (p instanceof GatePart gate) {
                 if (expectedAttachment != null
                         && Direction.values()[gate.slot()] != expectedAttachment) {
                     continue;
                 }
+                // Gates are redwire emitters, not redwire conductors. Their
+                // output enters the first wire without one-unit diminution.
                 max = Math.max(max, gateRawOutputToward(gate, toward));
             }
         }
