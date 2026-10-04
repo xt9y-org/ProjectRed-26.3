@@ -13,10 +13,12 @@ import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BaseEntityBlock;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.redstone.Orientation;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
@@ -46,6 +48,31 @@ public final class MultipartBlock extends BaseEntityBlock {
         return level.getBlockEntity(pos) instanceof MultipartBlockEntity be
                 ? be.collisionShape()
                 : Shapes.empty();
+    }
+
+    @Override
+    protected void neighborChanged(
+            BlockState state,
+            Level level,
+            BlockPos pos,
+            Block block,
+            @Nullable Orientation orientation,
+            boolean movedByPiston
+    ) {
+        super.neighborChanged(
+                state,
+                level,
+                pos,
+                block,
+                orientation,
+                movedByPiston
+        );
+
+        if (!level.isClientSide()
+                && level.getBlockEntity(pos)
+                instanceof MultipartBlockEntity multipart) {
+            multipart.onNeighborSignalChanged();
+        }
     }
 
     @Override
