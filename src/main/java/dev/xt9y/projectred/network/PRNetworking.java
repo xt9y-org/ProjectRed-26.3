@@ -43,11 +43,16 @@ public final class PRNetworking {
             MultipartBreakPayload payload
     ) {
         if (player.blockPosition().distManhattan(payload.pos()) > 8) return;
+        if (!player.mayBuild()) return;
         if (!(player.level().getBlockEntity(payload.pos())
                 instanceof MultipartBlockEntity multipart)) return;
         if (!multipart.hasSlot(payload.slot())) return;
 
-        multipart.removeAndDrop(payload.slot());
+        if (player.isCreative()) {
+            multipart.remove(payload.slot());
+        } else {
+            multipart.removeAndDrop(payload.slot());
+        }
     }
 
     public static boolean openGateConfig(
