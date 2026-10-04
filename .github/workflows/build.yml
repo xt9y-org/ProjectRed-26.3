@@ -57,6 +57,11 @@ jobs:
             exit 1
           fi
 
+          if grep -Eiq '(ERROR.*(projectred|project red)|failed to (parse|load).*(projectred|project red)|could not (parse|load).*(projectred|project red)|unknown.*projectred:)' server-smoke.log; then
+            echo "ProjectRed emitted a registry/data/resource error during server startup."
+            exit 1
+          fi
+
       - name: Upload test JAR
         uses: actions/upload-artifact@v4
         with:
