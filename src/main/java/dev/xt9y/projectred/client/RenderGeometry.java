@@ -242,20 +242,23 @@ final class RenderGeometry {
             Direction attachment,
             int rotation,
             int shape,
-            int mask
+            int mask,
+            int rgb
     ) {
         if (shape == 0) {
             drawSevenSegment(
                     c, pose, light,
                     attachment, rotation,
                     .18F, .18F, .46F, .82F,
-                    mask & 0xFF
+                    mask & 0xFF,
+                    rgb
             );
             drawSevenSegment(
                     c, pose, light,
                     attachment, rotation,
                     .54F, .18F, .82F, .82F,
-                    (mask >>> 8) & 0xFF
+                    (mask >>> 8) & 0xFF,
+                    rgb
             );
             return;
         }
@@ -274,7 +277,8 @@ final class RenderGeometry {
                     c, pose, light,
                     attachment, rotation,
                     u0, v0, u0 + .11F, v0 + .11F,
-                    .145F
+                    .145F,
+                    rgb
             );
         }
     }
@@ -289,7 +293,8 @@ final class RenderGeometry {
             float v0,
             float u1,
             float v1,
-            int bits
+            int bits,
+            int rgb
     ) {
         float w = u1 - u0;
         float h = v1 - v0;
@@ -298,14 +303,14 @@ final class RenderGeometry {
 
         // 0 top, 1 upper-right, 2 lower-right, 3 bottom,
         // 4 lower-left, 5 upper-left, 6 middle, 7 decimal point.
-        if ((bits & 0x01) != 0) surfaceRect(c,pose,light,attachment,rotation,u0+t,v0,u1-t,v0+t,.145F);
-        if ((bits & 0x02) != 0) surfaceRect(c,pose,light,attachment,rotation,u1-t,v0+t,u1,mid-t*.5F,.145F);
-        if ((bits & 0x04) != 0) surfaceRect(c,pose,light,attachment,rotation,u1-t,mid+t*.5F,u1,v1-t,.145F);
-        if ((bits & 0x08) != 0) surfaceRect(c,pose,light,attachment,rotation,u0+t,v1-t,u1-t,v1,.145F);
-        if ((bits & 0x10) != 0) surfaceRect(c,pose,light,attachment,rotation,u0,mid+t*.5F,u0+t,v1-t,.145F);
-        if ((bits & 0x20) != 0) surfaceRect(c,pose,light,attachment,rotation,u0,v0+t,u0+t,mid-t*.5F,.145F);
-        if ((bits & 0x40) != 0) surfaceRect(c,pose,light,attachment,rotation,u0+t,mid-t*.5F,u1-t,mid+t*.5F,.145F);
-        if ((bits & 0x80) != 0) surfaceRect(c,pose,light,attachment,rotation,u1-t*1.2F,v1-t*1.2F,u1,v1,.145F);
+        if ((bits & 0x01) != 0) surfaceRect(c,pose,light,attachment,rotation,u0+t,v0,u1-t,v0+t,.145F,rgb);
+        if ((bits & 0x02) != 0) surfaceRect(c,pose,light,attachment,rotation,u1-t,v0+t,u1,mid-t*.5F,.145F,rgb);
+        if ((bits & 0x04) != 0) surfaceRect(c,pose,light,attachment,rotation,u1-t,mid+t*.5F,u1,v1-t,.145F,rgb);
+        if ((bits & 0x08) != 0) surfaceRect(c,pose,light,attachment,rotation,u0+t,v1-t,u1-t,v1,.145F,rgb);
+        if ((bits & 0x10) != 0) surfaceRect(c,pose,light,attachment,rotation,u0,mid+t*.5F,u0+t,v1-t,.145F,rgb);
+        if ((bits & 0x20) != 0) surfaceRect(c,pose,light,attachment,rotation,u0,v0+t,u0+t,mid-t*.5F,.145F,rgb);
+        if ((bits & 0x40) != 0) surfaceRect(c,pose,light,attachment,rotation,u0+t,mid-t*.5F,u1-t,mid+t*.5F,.145F,rgb);
+        if ((bits & 0x80) != 0) surfaceRect(c,pose,light,attachment,rotation,u1-t*1.2F,v1-t*1.2F,u1,v1,.145F,rgb);
     }
 
     private static void surfaceRect(
@@ -349,6 +354,78 @@ final class RenderGeometry {
                 e[0],e[1],e[2],
                 d[0],d[1],d[2]
         );
+    }
+
+    private static void surfaceRect(
+            VertexConsumer c,
+            PoseStack.Pose pose,
+            int light,
+            Direction attachment,
+            int rotation,
+            float u0,
+            float v0,
+            float u1,
+            float v1,
+            float depth,
+            int rgb
+    ) {
+        Direction right = MultipartBlockEntity.localToWorld(
+                attachment,
+                rotation,
+                1
+        );
+        Direction down = MultipartBlockEntity.localToWorld(
+                attachment,
+                rotation,
+                2
+        );
+
+        float cx = .5F + attachment.getStepX() * (.5F - depth);
+        float cy = .5F + attachment.getStepY() * (.5F - depth);
+        float cz = .5F + attachment.getStepZ() * (.5F - depth);
+
+        float[] a = point(cx,cy,cz,right,down,u0,v0);
+        float[] b = point(cx,cy,cz,right,down,u1,v0);
+        float[] d = point(cx,cy,cz,right,down,u0,v1);
+        float[] e = point(cx,cy,cz,right,down,u1,v1);
+
+        orientedQuadColor(
+                c, pose, light,
+                attachment.getOpposite(),
+                a[0],a[1],a[2],
+                b[0],b[1],b[2],
+                e[0],e[1],e[2],
+                d[0],d[1],d[2],
+                rgb
+        );
+    }
+
+    private static void orientedQuadColor(
+            VertexConsumer c,
+            PoseStack.Pose pose,
+            int light,
+            Direction normal,
+            float ax,float ay,float az,
+            float bx,float by,float bz,
+            float cx,float cy,float cz,
+            float dx,float dy,float dz,
+            int rgb
+    ) {
+        int r = (rgb >> 16) & 0xFF;
+        int g = (rgb >> 8) & 0xFF;
+        int b = rgb & 0xFF;
+        float nx = normal.getStepX();
+        float ny = normal.getStepY();
+        float nz = normal.getStepZ();
+
+        vertexColor(c,pose,light,ax,ay,az,0,0,nx,ny,nz,r,g,b);
+        vertexColor(c,pose,light,bx,by,bz,1,0,nx,ny,nz,r,g,b);
+        vertexColor(c,pose,light,cx,cy,cz,1,1,nx,ny,nz,r,g,b);
+        vertexColor(c,pose,light,dx,dy,dz,0,1,nx,ny,nz,r,g,b);
+        vertexColor(c,pose,light,dx,dy,dz,0,1,-nx,-ny,-nz,r,g,b);
+        vertexColor(c,pose,light,cx,cy,cz,1,1,-nx,-ny,-nz,r,g,b);
+        vertexColor(c,pose,light,bx,by,bz,1,0,-nx,-ny,-nz,r,g,b);
+        vertexColor(c,pose,light,ax,ay,az,0,0,-nx,-ny,-nz,r,g,b);
     }
 
     private static float[] point(
@@ -421,6 +498,20 @@ final class RenderGeometry {
         vertex(c,pose,light,cx,cy,cz,cu,cv,-nx,-ny,-nz);
         vertex(c,pose,light,bx,by,bz,bu,bv,-nx,-ny,-nz);
         vertex(c,pose,light,ax,ay,az,au,av,-nx,-ny,-nz);
+    }
+
+    private static void vertexColor(
+            VertexConsumer c, PoseStack.Pose pose, int light,
+            float x,float y,float z,float u,float v,
+            float nx,float ny,float nz,
+            int r,int g,int b
+    ) {
+        c.addVertex(pose,x,y,z)
+                .setColor(r,g,b,255)
+                .setUv(u,v)
+                .setOverlay(OverlayTexture.NO_OVERLAY)
+                .setLight(light)
+                .setNormal(pose,nx,ny,nz);
     }
 
     private static void vertex(
