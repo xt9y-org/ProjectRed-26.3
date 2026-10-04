@@ -22,6 +22,7 @@ public final class GatePart extends Part {
     // Stateful Integration gates.
     private int timerPeriod = 40;
     private long pointerStart = -1;
+    private boolean pointerNeedsWorldTimeRebase;
     private int counterValue;
     private int counterMax = 10;
     private int counterIncrement = 1;
@@ -303,6 +304,15 @@ public final class GatePart extends Part {
                     DEC_RANDOMIZER -> true;
             default -> false;
         };
+    }
+
+    public void restoreWorldTimeBase(MultipartBlockEntity owner) {
+        if (!pointerNeedsWorldTimeRebase || owner.getLevel() == null) return;
+
+        if (pointerStart >= 0) {
+            pointerStart = owner.getLevel().getGameTime() - pointerStart;
+        }
+        pointerNeedsWorldTimeRebase = false;
     }
 
     public boolean tick(MultipartBlockEntity owner) {
@@ -901,6 +911,36 @@ public final class GatePart extends Part {
                 + "|" + pressMask;
     }
 
+    @Override
+    public String encode(long gameTime) {
+        long persistedPointer = pointerStart < 0
+                ? -1
+                : Math.max(0, gameTime - pointerStart);
+
+        return "g|" + type.id()
+                + "|" + slot()
+                + "|" + rotation
+                + "|" + shape
+                + "|" + state
+                + "|" + state2
+                + "|" + scheduledAt
+                + "|" + timerPeriod
+                + "|" + persistedPointer
+                + "|" + counterValue
+                + "|" + counterMax
+                + "|" + counterIncrement
+                + "|" + counterDecrement
+                + "|" + arraySignalA
+                + "|" + arraySignalB
+                + "|" + bundleInput0
+                + "|" + bundleInput2
+                + "|" + bundleOutput0
+                + "|" + bundleOutput2
+                + "|" + bundleMask
+                + "|" + pressMask
+                + "|elapsed";
+    }
+
     public static GatePart decode(GateType type, int slot, String[] p) {
         GatePart part = new GatePart(type, slot, intAt(p, 3, 0));
         part.shape = intAt(p, 4, part.shape);
@@ -909,6 +949,8 @@ public final class GatePart extends Part {
         part.scheduledAt = longAt(p, 7, -1);
         part.timerPeriod = intAt(p, 8, 40);
         part.pointerStart = longAt(p, 9, -1);
+        part.pointerNeedsWorldTimeRebase =
+                p.length > 22 && "elapsed".equals(p[22]);
         part.counterValue = intAt(p, 10, 0);
         part.counterMax = intAt(p, 11, 10);
         part.counterIncrement = intAt(p, 12, 1);

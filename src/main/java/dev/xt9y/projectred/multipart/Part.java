@@ -25,6 +25,10 @@ public abstract class Part {
 
     public abstract String encode();
 
+    public String encode(long gameTime) {
+        return encode();
+    }
+
     public static Part decode(String encoded) {
         String[] p = encoded.split("\\|", -1);
         if (p.length < 3) throw new IllegalArgumentException("invalid multipart part");

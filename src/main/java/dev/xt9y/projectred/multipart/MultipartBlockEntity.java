@@ -55,7 +55,10 @@ public final class MultipartBlockEntity extends BlockEntity {
                 continue;
             }
             if (part instanceof WirePart wire) changed |= wire.recompute(be);
-            if (part instanceof GatePart gate) changed |= gate.tick(be);
+            if (part instanceof GatePart gate) {
+                gate.restoreWorldTimeBase(be);
+                changed |= gate.tick(be);
+            }
         }
 
         for (int slot : unsupported) be.removeAndDrop(slot);
@@ -1302,7 +1305,10 @@ public final class MultipartBlockEntity extends BlockEntity {
         super.saveAdditional(output);
         List<Part> all = parts();
         output.putInt("part_count", all.size());
-        for (int i=0;i<all.size();i++) output.putString("part_" + i, all.get(i).encode());
+        long gameTime = level == null ? 0 : level.getGameTime();
+        for (int i = 0; i < all.size(); i++) {
+            output.putString("part_" + i, all.get(i).encode(gameTime));
+        }
     }
 
     @Override
