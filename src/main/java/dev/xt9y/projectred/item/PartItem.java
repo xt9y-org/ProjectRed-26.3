@@ -89,29 +89,37 @@ public final class PartItem extends Item {
     private static int placementRotation(UseOnContext context, int slot) {
         if (slot == Part.CENTER_SLOT) return 0;
 
-        Direction attachment = Direction.values()[slot];
         Player player = context.getPlayer();
-        Direction desired = player == null ? Direction.NORTH : player.getDirection();
+        if (player == null) return 0;
 
-        // When placing on a vertical wall, the player's horizontal facing is
-        // often perpendicular to the gate plane. ProjectRed-style placement
-        // keeps the gate upright in that case.
-        if (desired.getAxis() == attachment.getAxis()) {
-            desired = attachment.getAxis().isVertical()
-                    ? Direction.NORTH
-                    : Direction.UP;
-        }
+        Direction attachment = Direction.values()[slot];
+        net.minecraft.world.phys.Vec3 look = player.getViewVector(1.0F);
+
+        // CodeChickenLib Rotation#getSidedRotation projects the player's full
+        // look vector onto the four directions in the gate plane. Combined
+        // with ProjectRed's toAbsolute(+2) convention, local side 0 ends up
+        // pointing along the strongest projected look direction. Selecting
+        // the rotation this way reproduces the same result without CCL.
+        int bestRotation = 0;
+        double bestDot = Double.NEGATIVE_INFINITY;
 
         for (int rotation = 0; rotation < 4; rotation++) {
-            if (MultipartBlockEntity.localToWorld(
+            Direction direction = MultipartBlockEntity.localToWorld(
                     attachment,
                     rotation,
                     0
-            ) == desired) {
-                return rotation;
+            );
+            double dot = look.x * direction.getStepX()
+                    + look.y * direction.getStepY()
+                    + look.z * direction.getStepZ();
+
+            if (dot > bestDot) {
+                bestDot = dot;
+                bestRotation = rotation;
             }
         }
-        return 0;
+
+        return bestRotation;
     }
 
     private boolean canSupport(Level level, BlockPos target, int slot) {
