@@ -38,6 +38,7 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 public final class MultipartBlockEntity extends BlockEntity {
     private final Part[] face = new Part[6];
     private Part center;
+    private boolean handlingNeighborSignalChange;
 
     public MultipartBlockEntity(BlockPos pos, BlockState state) {
         super(PRContent.MULTIPART_BE, pos, state);
@@ -65,6 +66,45 @@ public final class MultipartBlockEntity extends BlockEntity {
         if (changed) {
             be.syncChanged();
             be.propagateConnectedSignals();
+        }
+    }
+
+    public void onNeighborSignalChanged() {
+        if (level == null
+                || level.isClientSide()
+                || handlingNeighborSignalChange) {
+            return;
+        }
+
+        handlingNeighborSignalChange = true;
+        try {
+            boolean changed = false;
+            List<Integer> unsupported = new ArrayList<>();
+
+            for (Part part : parts()) {
+                if (!part.center() && !hasSupport(part)) {
+                    unsupported.add(part.slot());
+                    continue;
+                }
+
+                if (part instanceof WirePart wire) {
+                    changed |= wire.recompute(this);
+                } else if (part instanceof GatePart gate) {
+                    gate.restoreWorldTimeBase(this);
+                    changed |= gate.tick(this);
+                }
+            }
+
+            for (int slot : unsupported) {
+                changed |= removeAndDrop(slot);
+            }
+
+            if (changed && level.getBlockEntity(worldPosition) == this) {
+                syncChanged();
+                propagateConnectedSignals();
+            }
+        } finally {
+            handlingNeighborSignalChange = false;
         }
     }
 
