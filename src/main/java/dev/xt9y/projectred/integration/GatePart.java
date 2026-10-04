@@ -122,8 +122,10 @@ public final class GatePart extends Part {
             case LIGHT_SENSOR -> shape = (shape + 1) % 3;
             case SR_LATCH -> {
                 shape = (shape + 1) % 4;
-                state = flipMaskZ(state & 0xF) | flipMaskZ(state >> 4) << 4;
+                state = flipMaskZ(state & 0xF)
+                        | flipMaskZ(state >> 4) << 4;
                 state2 = flipMaskZ(state2);
+                scheduledAt = 0;
             }
             default -> {
             }
