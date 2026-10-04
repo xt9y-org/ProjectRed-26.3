@@ -134,7 +134,7 @@ public final class GatePart extends Part {
                 state = flipMaskZ(state & 0xF)
                         | flipMaskZ(state >> 4) << 4;
                 state2 = flipMaskZ(state2);
-                scheduledAt = 0;
+                scheduleWithoutOwner();
             }
             default -> {
             }
@@ -160,7 +160,7 @@ public final class GatePart extends Part {
         // changing max does not rewrite them. A value clamp does require the
         // normal delayed output update.
         if (counterValue != oldValue) {
-            scheduledAt = 0;
+            scheduleWithoutOwner();
         }
     }
 
@@ -181,7 +181,7 @@ public final class GatePart extends Part {
     public void activate() {
         if (type == GateType.TOGGLE_LATCH) {
             state2 = state2 == 0 ? 1 : 0;
-            scheduledAt = 0;
+            scheduleWithoutOwner();
         } else if (type == GateType.REPEATER) {
             cycleShape();
         }
@@ -192,7 +192,7 @@ public final class GatePart extends Part {
             return;
         }
         pressMask ^= 1 << bit;
-        scheduledAt = 0;
+        scheduleWithoutOwner();
     }
 
     public boolean canConnectLocal(int r) {
@@ -758,6 +758,16 @@ public final class GatePart extends Part {
     private void schedule(MultipartBlockEntity owner, int ticks) {
         if (scheduledAt < 0 && owner.getLevel() != null) {
             scheduledAt = owner.getLevel().getGameTime() + ticks;
+        }
+    }
+
+    private void scheduleWithoutOwner() {
+        // Interaction/config methods do not have a level reference. Zero is a
+        // deferred marker converted to gameTime + 2 on the next server tick.
+        // Like upstream scheduleTick(), never replace a transition that is
+        // already pending.
+        if (scheduledAt < 0) {
+            scheduledAt = 0;
         }
     }
 
