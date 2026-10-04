@@ -25,6 +25,8 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
     private static final Identifier GATE_BASE = projectRed("integration/block/base");
     private static final Identifier WIRE_BORDER = projectRed("integration/block/wire_material_border");
     private static final Identifier WIRE_ON = projectRed("integration/block/wire_material_on");
+    private static final Identifier SEGMENT_BASE = projectRed("integration/block/segment_display");
+    private static final Identifier SEGMENT_DIGIT = projectRed("integration/block/segment_display_digit");
 
     public MultipartRenderer(BlockEntityRendererProvider.Context context) {}
 
@@ -42,7 +44,9 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
             GateType gateType,
             int gateShape,
             int gateRotation,
-            int gateState
+            int gateState,
+            int bundledMask,
+            int panelMask
     ) {}
 
     @Override
@@ -76,6 +80,8 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
                         null,
                         0,
                         0,
+                        0,
+                        0,
                         0
                 ));
             } else if (part instanceof GatePart gate) {
@@ -89,7 +95,9 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
                         gate.type(),
                         gate.shape(),
                         gate.rotation(),
-                        gate.state()
+                        gate.state(),
+                        gate.segmentMask(),
+                        gate.panelMask()
                 ));
             }
         }
@@ -179,6 +187,50 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
                                 state.lightCoords,
                                 attachment,
                                 part.gateRotation
+                        )
+                );
+            }
+
+            if (part.gateType == GateType.SEGMENT_DISPLAY) {
+                collector.order(order++).submitCustomGeometry(
+                        poseStack,
+                        RenderTypes.entityCutout(SEGMENT_BASE),
+                        (pose, consumer) -> RenderGeometry.gateSurface(
+                                consumer,
+                                pose,
+                                state.lightCoords,
+                                attachment,
+                                part.gateRotation
+                        )
+                );
+                if (part.bundledMask != 0) {
+                    collector.order(order++).submitCustomGeometry(
+                            poseStack,
+                            RenderTypes.entityCutout(SEGMENT_DIGIT),
+                            (pose, consumer) -> RenderGeometry.segmentDisplay(
+                                    consumer,
+                                    pose,
+                                    0x00F000F0,
+                                    attachment,
+                                    part.gateRotation,
+                                    part.gateShape,
+                                    part.bundledMask
+                            )
+                    );
+                }
+            }
+
+            if (part.gateType == GateType.BUS_INPUT_PANEL && part.panelMask != 0) {
+                collector.order(order++).submitCustomGeometry(
+                        poseStack,
+                        RenderTypes.entityCutout(WIRE_ON),
+                        (pose, consumer) -> RenderGeometry.panelButtons(
+                                consumer,
+                                pose,
+                                0x00F000F0,
+                                attachment,
+                                part.gateRotation,
+                                part.panelMask
                         )
                 );
             }
