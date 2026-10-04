@@ -938,15 +938,21 @@ public final class MultipartBlockEntity extends BlockEntity {
     public int directSignal(Direction toward) {
         int max = 0;
         for (Part p : parts()) {
-            if (!(p instanceof WirePart wire)
-                    || wire.spec().family() != WireFamily.RED_ALLOY
-                    || wire.center()) {
-                continue;
-            }
+            if (p instanceof WirePart wire) {
+                if (wire.spec().family() != WireFamily.RED_ALLOY
+                        || wire.center()) {
+                    continue;
+                }
 
-            Direction attachment = Direction.values()[wire.slot()];
-            if (toward == attachment) {
-                max = Math.max(max, wire.vanillaSignal());
+                Direction attachment = Direction.values()[wire.slot()];
+                if (toward == attachment) {
+                    max = Math.max(max, wire.vanillaSignal());
+                }
+            } else if (p instanceof GatePart gate
+                    && partConnectsToward(gate, toward)) {
+                // Upstream RedstoneGatePart uses the same output level for
+                // weak and strong power on its four logic sides.
+                max = Math.max(max, gateOutputToward(gate, toward));
             }
         }
         return max;
