@@ -42,7 +42,7 @@ public final class PartItem extends Item {
             int slot = slotFor(clickedFace);
             if (!existing.hasSlot(slot)) {
                 if (!level.isClientSide()) {
-                    existing.add(create(slot));
+                    existing.add(create(slot, context));
                     consume(context.getPlayer(), context);
                 }
                 return InteractionResult.SUCCESS;
@@ -58,7 +58,7 @@ public final class PartItem extends Item {
                 level.setBlock(target, PRContent.MULTIPART.defaultBlockState(), 3);
             }
             if (level.getBlockEntity(target) instanceof MultipartBlockEntity be && !be.hasSlot(slot)) {
-                be.add(create(slot));
+                be.add(create(slot, context));
                 consume(context.getPlayer(), context);
                 return InteractionResult.SUCCESS;
             }
@@ -72,8 +72,39 @@ public final class PartItem extends Item {
         return wire != null && wire.framed() ? Part.CENTER_SLOT : attachment.ordinal();
     }
 
-    private Part create(int slot) {
-        return wire != null ? new WirePart(wire, slot) : new GatePart(gate, slot, 0);
+    private Part create(int slot, UseOnContext context) {
+        if (wire != null) {
+            return new WirePart(wire, slot);
+        }
+        return new GatePart(gate, slot, placementRotation(context, slot));
+    }
+
+    private static int placementRotation(UseOnContext context, int slot) {
+        if (slot == Part.CENTER_SLOT) return 0;
+
+        Direction attachment = Direction.values()[slot];
+        Player player = context.getPlayer();
+        Direction desired = player == null ? Direction.NORTH : player.getDirection();
+
+        // When placing on a vertical wall, the player's horizontal facing is
+        // often perpendicular to the gate plane. ProjectRed-style placement
+        // keeps the gate upright in that case.
+        if (desired.getAxis() == attachment.getAxis()) {
+            desired = attachment.getAxis().isVertical()
+                    ? Direction.NORTH
+                    : Direction.UP;
+        }
+
+        for (int rotation = 0; rotation < 4; rotation++) {
+            if (MultipartBlockEntity.localToWorld(
+                    attachment,
+                    rotation,
+                    0
+            ) == desired) {
+                return rotation;
+            }
+        }
+        return 0;
     }
 
     private static boolean canSupport(Level level, BlockPos target, int slot) {
