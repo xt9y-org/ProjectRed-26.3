@@ -331,7 +331,14 @@ public final class GatePart extends Part {
                 - owner.getLevel().getSkyDarken();
         int block = owner.getLevel().getBrightness(LightLayer.BLOCK, owner.getBlockPos());
         int out = shape == 1 ? sky : shape == 2 ? block : Math.max(sky, block);
-        state = (state & 0xF) | (Math.max(0, Math.min(15, out)) << 4);
+
+        // Modern ProjectRed also samples the output-side feedback into the
+        // low state nibble. It does not drive the sensor output, but it keeps
+        // the gate's redstone connection/input state consistent with the
+        // upstream implementation.
+        int feedback = owner.gateInput(this, 4);
+        state = (feedback & 0xF)
+                | (Math.max(0, Math.min(15, out)) << 4);
     }
 
     private void tickRainSensor(MultipartBlockEntity owner) {
@@ -738,6 +745,7 @@ public final class GatePart extends Part {
         return switch (type) {
             case NOR -> 1;
             case NOT, BUFFER, RANDOMIZER -> outputMask();
+            case LIGHT_SENSOR -> 4;
             case DEC_RANDOMIZER -> 2;
             default -> 0;
         };
