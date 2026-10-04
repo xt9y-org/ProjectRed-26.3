@@ -304,7 +304,7 @@ public final class GatePart extends Part {
 
     private void tickSequencer(MultipartBlockEntity owner) {
         if (owner.getLevel() == null) return;
-        int step = (int) (owner.getLevel().getTimeOfDay() % (timerPeriod * 4L) / timerPeriod);
+        int step = (int) (owner.getLevel().getDefaultClockTime() % (timerPeriod * 4L) / timerPeriod);
         int out = 1 << step;
         if (shape == 1) out = flipMaskZ(out);
         state = out << 4;
