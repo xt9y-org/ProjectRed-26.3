@@ -388,7 +388,7 @@ public final class GatePart extends Part {
 
     private void onChange(MultipartBlockEntity owner) {
         int mask = inputMask();
-        int input = owner.gateInput(this, mask);
+        int input = owner.gateInput(this, mask | feedbackMask());
         int oldInput = state & 0xF;
 
         switch (type) {
@@ -504,6 +504,14 @@ public final class GatePart extends Part {
         int output = calcOutput(state & mask) & outputMask();
         if (output != (state >> 4)) {
             if (type != GateType.REPEATER || scheduledAt < 0) schedule(owner, delay());
+        }
+
+        // ProjectRed randomizers continue scheduling while their trigger
+        // remains high, even if a random roll happens to equal the current
+        // output value.
+        if ((type == GateType.RANDOMIZER || type == GateType.DEC_RANDOMIZER)
+                && (state & 4) != 0) {
+            schedule(owner, 2);
         }
     }
 
@@ -654,6 +662,15 @@ public final class GatePart extends Part {
             case BUS_TRANSCEIVER, BUS_RANDOMIZER -> 0xA;
             case BUS_CONVERTER -> shape == 0 ? 4 : 0;
             case BUS_INPUT_PANEL -> 1;
+            default -> 0;
+        };
+    }
+
+    private int feedbackMask() {
+        return switch (type) {
+            case NOR -> 1;
+            case NOT, BUFFER, RANDOMIZER -> outputMask();
+            case DEC_RANDOMIZER -> 2;
             default -> 0;
         };
     }
