@@ -1373,42 +1373,148 @@ public final class MultipartBlockEntity extends BlockEntity {
     }
 
     public int[] gateBundledInput(GatePart receiver, int local) {
+        if (!receiver.canConnectBundledLocal(local)) {
+            return new int[16];
+        }
+
+        Direction attachment = Direction.values()[receiver.slot()];
         Direction direction = localToWorld(
-                Direction.values()[receiver.slot()],
+                attachment,
                 receiver.rotation(),
                 local
         );
-        int[] out = new int[16];
 
-        for (Part p : parts()) {
-            if (p == receiver) continue;
-            if (p instanceof WirePart wire
-                    && wire.spec().family() == WireFamily.BUNDLED
-                    && internalWireMeetsDirection(wire, direction)) {
-                out = BundledSignals.raise(
-                        out,
-                        wire.bundledSignal(),
-                        false
-                );
-            }
-        }
-
-        if (level != null) {
-            BlockEntity neighbor = level.getBlockEntity(
-                    worldPosition.relative(direction)
+        if (level == null) {
+            int[] inside = insideGateBundledSignal(
+                    receiver,
+                    attachment,
+                    direction
             );
-            if (neighbor instanceof MultipartBlockEntity multipart) {
-                out = BundledSignals.raise(
-                        out,
-                        multipart.bundledSignalTowardFace(
-                                direction.getOpposite(),
-                                Direction.values()[receiver.slot()]
-                        ),
-                        false
-                );
+            return inside == null ? new int[16] : inside;
+        }
+
+        int[] straight = straightGateBundledSignal(
+                receiver,
+                attachment,
+                direction
+        );
+        if (straight != null) {
+            return straight;
+        }
+
+        if (outsideCornerEdgeOpen(direction, attachment)) {
+            int[] corner = cornerGateBundledSignal(
+                    receiver,
+                    attachment,
+                    direction
+            );
+            if (corner != null) {
+                return corner;
             }
         }
-        return out;
+
+        int[] inside = insideGateBundledSignal(
+                receiver,
+                attachment,
+                direction
+        );
+        return inside == null ? new int[16] : inside;
+    }
+
+    private int[] insideGateBundledSignal(
+            GatePart receiver,
+            Direction receiverAttachment,
+            Direction direction
+    ) {
+        Part inside = face[direction.ordinal()];
+
+        if (inside instanceof WirePart wire
+                && wire.spec().family() == WireFamily.BUNDLED) {
+            return wire.bundled();
+        }
+
+        if (inside instanceof GatePart gate
+                && gateConnectsToward(
+                        gate,
+                        receiverAttachment,
+                        true
+                )) {
+            return gateBundledOutputToward(
+                    gate,
+                    receiverAttachment
+            );
+        }
+
+        return null;
+    }
+
+    private int[] straightGateBundledSignal(
+            GatePart receiver,
+            Direction attachment,
+            Direction direction
+    ) {
+        BlockEntity neighbor = level.getBlockEntity(
+                worldPosition.relative(direction)
+        );
+        if (!(neighbor instanceof MultipartBlockEntity multipart)) {
+            return null;
+        }
+
+        Part part = multipart.part(attachment.ordinal());
+
+        if (part instanceof WirePart wire
+                && wire.spec().family() == WireFamily.BUNDLED
+                && partConnectsToward(wire, direction.getOpposite())
+                && multipart.faceWireExternalOpen(
+                        wire,
+                        direction.getOpposite()
+                )) {
+            return wire.bundled();
+        }
+
+        if (part instanceof GatePart gate
+                && gateConnectsToward(
+                        gate,
+                        direction.getOpposite(),
+                        true
+                )) {
+            return gateBundledOutputToward(
+                    gate,
+                    direction.getOpposite()
+            );
+        }
+
+        return null;
+    }
+
+    private int[] cornerGateBundledSignal(
+            GatePart receiver,
+            Direction attachment,
+            Direction direction
+    ) {
+        BlockPos cornerPos = worldPosition
+                .relative(direction)
+                .relative(attachment);
+        BlockEntity corner = level.getBlockEntity(cornerPos);
+        if (!(corner instanceof MultipartBlockEntity multipart)) {
+            return null;
+        }
+
+        // Gates themselves cannot turn a corner upstream. The far endpoint
+        // must therefore be a face bundled cable, whose canConnectCorner()
+        // supplies the corner capability for the handshake.
+        Part part = multipart.part(direction.getOpposite().ordinal());
+        if (!(part instanceof WirePart wire)
+                || wire.spec().family() != WireFamily.BUNDLED) {
+            return null;
+        }
+
+        Direction farEdge = attachment.getOpposite();
+        if (!multipart.faceWireExternalOpen(wire, farEdge)) {
+            return null;
+        }
+
+        return wire.bundled();
     }
 
     public int gateInput(GatePart gate, int mask) {
