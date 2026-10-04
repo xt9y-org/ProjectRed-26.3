@@ -1018,9 +1018,9 @@ public final class MultipartBlockEntity extends BlockEntity {
                 continue;
             }
 
-            boolean connected =
-                    attachment != null
-                            && hasInsideWireConnection(receiver, direction);
+            boolean connected = receiver.center()
+                    ? hasCenterInsideWireConnection(receiver, direction)
+                    : hasInsideWireConnection(receiver, direction);
 
             boolean externalOpen = attachment == null
                     || faceWireExternalOpen(receiver, direction);
@@ -1094,6 +1094,24 @@ public final class MultipartBlockEntity extends BlockEntity {
         // not implement). A center/framed wire does not block the bend.
         return !multipart.hasSlot(direction.getOpposite().ordinal())
                 && !multipart.hasSlot(attachment.ordinal());
+    }
+
+    private boolean hasCenterInsideWireConnection(
+            WirePart receiver,
+            Direction direction
+    ) {
+        if (!receiver.center()) return false;
+
+        Part inside = face[direction.ordinal()];
+        if (inside instanceof WirePart other) {
+            return receiver.canConnect(other);
+        }
+
+        // Framed red/insulated wire does not handshake directly with gates in
+        // upstream ProjectRed. Bundled-gate center handshakes depend on CCL's
+        // legacy sentinel direction and are intentionally not synthesized
+        // here until that behavior is represented explicitly.
+        return false;
     }
 
     private boolean hasInsideWireConnection(
