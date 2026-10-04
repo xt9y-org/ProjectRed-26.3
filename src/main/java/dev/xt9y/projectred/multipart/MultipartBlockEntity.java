@@ -148,6 +148,25 @@ public final class MultipartBlockEntity extends BlockEntity {
         return slot == Part.CENTER_SLOT ? center : slot >= 0 && slot < 6 ? face[slot] : null;
     }
 
+    public void preparePlacement(Part part) {
+        if (!(part instanceof GatePart gate)
+                || gate.type() != GateType.NULL_CELL
+                || part.center()) {
+            return;
+        }
+
+        Direction side = Direction.values()[part.slot()];
+        Part opposite = face[side.getOpposite().ordinal()];
+        if (opposite instanceof GatePart other
+                && other.type() == gate.type()
+                && (other.rotation() & 1) == (gate.rotation() & 1)) {
+            // ArrayGatePart::preparePlacement() automatically rotates a
+            // crossing Null Cell so the two independent redwire paths are
+            // perpendicular instead of occupying the same track.
+            gate.rotate();
+        }
+    }
+
     public boolean canAdd(Part part) {
         if (part == null || hasSlot(part.slot())) return false;
 
@@ -171,10 +190,15 @@ public final class MultipartBlockEntity extends BlockEntity {
 
             Direction existingSide = Direction.values()[existing.slot()];
 
-            // Array cells use the upstream 6/8-deep collision body. A thin
-            // ordinary face part only fits on the directly opposite face.
-            // Two array cells always overlap, including on opposite faces.
-            if (candidateArray && existingArray) return false;
+            if (candidateArray && existingArray) {
+                if (!arrayCellsCanCross(part, existing)) {
+                    return false;
+                }
+                continue;
+            }
+
+            // The 6/8-deep array body can coexist only with a normal thin
+            // part on the directly opposite face.
             if (candidateArray && existingSide != candidateSide.getOpposite()) {
                 return false;
             }
@@ -183,6 +207,19 @@ public final class MultipartBlockEntity extends BlockEntity {
             }
         }
         return true;
+    }
+
+    private static boolean arrayCellsCanCross(Part a, Part b) {
+        if (!(a instanceof GatePart ga) || !(b instanceof GatePart gb)) {
+            return false;
+        }
+
+        Direction sa = Direction.values()[a.slot()];
+        Direction sb = Direction.values()[b.slot()];
+
+        return ga.type() == gb.type()
+                && sb == sa.getOpposite()
+                && (ga.rotation() & 1) != (gb.rotation() & 1);
     }
 
     public boolean add(Part part) {
