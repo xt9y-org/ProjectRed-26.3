@@ -287,12 +287,56 @@ public final class MultipartBlockEntity extends BlockEntity {
         double x = hit.x - worldPosition.getX();
         double y = hit.y - worldPosition.getY();
         double z = hit.z - worldPosition.getZ();
-        if (center != null && x > .32 && x < .68 && y > .32 && y < .68 && z > .32 && z < .68) return Part.CENTER_SLOT;
+
+        if (center instanceof WirePart wire
+                && hitCenterWire(wire, x, y, z)) {
+            return Part.CENTER_SLOT;
+        }
+
         double[] d = { y, 1-y, z, 1-z, x, 1-x };
         int best = -1;
         double dist = Double.MAX_VALUE;
-        for (int i=0;i<6;i++) if (face[i] != null && d[i] < dist) { best=i; dist=d[i]; }
+        for (int i = 0; i < 6; i++) {
+            if (face[i] != null && d[i] < dist) {
+                best = i;
+                dist = d[i];
+            }
+        }
         return best;
+    }
+
+    private boolean hitCenterWire(
+            WirePart wire,
+            double x,
+            double y,
+            double z
+    ) {
+        if (inside(x, .25, .75)
+                && inside(y, .25, .75)
+                && inside(z, .25, .75)) {
+            return true;
+        }
+
+        int connections = visualWireConnections(wire);
+
+        if ((connections & (1 << Direction.DOWN.ordinal())) != 0
+                && inside(x,.25,.75) && y <= .25 && inside(z,.25,.75)) return true;
+        if ((connections & (1 << Direction.UP.ordinal())) != 0
+                && inside(x,.25,.75) && y >= .75 && inside(z,.25,.75)) return true;
+        if ((connections & (1 << Direction.NORTH.ordinal())) != 0
+                && inside(x,.25,.75) && inside(y,.25,.75) && z <= .25) return true;
+        if ((connections & (1 << Direction.SOUTH.ordinal())) != 0
+                && inside(x,.25,.75) && inside(y,.25,.75) && z >= .75) return true;
+        if ((connections & (1 << Direction.WEST.ordinal())) != 0
+                && x <= .25 && inside(y,.25,.75) && inside(z,.25,.75)) return true;
+        if ((connections & (1 << Direction.EAST.ordinal())) != 0
+                && x >= .75 && inside(y,.25,.75) && inside(z,.25,.75)) return true;
+
+        return false;
+    }
+
+    private static boolean inside(double value, double min, double max) {
+        return value >= min && value <= max;
     }
 
     public int panelBit(GatePart gate, Vec3 hit) {
@@ -340,6 +384,28 @@ public final class MultipartBlockEntity extends BlockEntity {
             );
         }
         return false;
+    }
+
+    public VoxelShape collisionShape() {
+        VoxelShape out = Shapes.empty();
+
+        if (center instanceof WirePart wire) {
+            out = Shapes.or(out, centerWireShape(visualWireConnections(wire)));
+        }
+
+        for (int i = 0; i < 6; i++) {
+            Part part = face[i];
+            if (!(part instanceof GatePart gate)) continue;
+
+            Direction side = Direction.values()[i];
+            out = Shapes.or(
+                    out,
+                    gate.isArrayCell()
+                            ? arrayCellShape(side)
+                            : gateFaceShape(side)
+            );
+        }
+        return out;
     }
 
     public VoxelShape shape() {
