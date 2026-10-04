@@ -570,13 +570,52 @@ public final class MultipartBlockEntity extends BlockEntity {
                 continue;
             }
 
-            if (hasStraightWireConnection(receiver, direction, attachment)
-                    || (attachment != null
-                    && hasCornerWireConnection(receiver, direction, attachment))) {
+            boolean connected =
+                    attachment != null
+                            && hasInsideWireConnection(receiver, direction);
+
+            if (!connected) {
+                connected = hasStraightWireConnection(
+                        receiver,
+                        direction,
+                        attachment
+                );
+            }
+
+            if (!connected && attachment != null) {
+                connected = hasCornerWireConnection(
+                        receiver,
+                        direction,
+                        attachment
+                );
+            }
+
+            if (connected) {
                 mask |= 1 << direction.ordinal();
             }
         }
         return mask;
+    }
+
+    private boolean hasInsideWireConnection(
+            WirePart receiver,
+            Direction direction
+    ) {
+        Part inside = face[direction.ordinal()];
+
+        if (inside instanceof WirePart other) {
+            return receiver.canConnect(other);
+        }
+
+        if (inside instanceof GatePart gate) {
+            return gateConnectsToward(
+                    gate,
+                    Direction.values()[receiver.slot()].getOpposite(),
+                    receiver.spec().family() == WireFamily.BUNDLED
+            );
+        }
+
+        return false;
     }
 
     private boolean hasStraightWireConnection(
