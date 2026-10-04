@@ -69,12 +69,13 @@ final class RenderGeometry {
             PoseStack.Pose pose,
             int light,
             Direction attachment,
-            int rotation
+            int rotation,
+            float depth
     ) {
         // Slightly raised to prevent z-fighting with the base.
         float lo = .0625F;
         float hi = .9375F;
-        float d = .126F;
+        float d = depth;
 
         switch (attachment) {
             case DOWN -> orientedQuad(c, pose, light, attachment, rotation,
@@ -89,6 +90,22 @@ final class RenderGeometry {
                     d,hi,hi, d,hi,lo, d,lo,lo, d,lo,hi);
             case EAST -> orientedQuad(c, pose, light, attachment, rotation,
                     1-d,hi,lo, 1-d,hi,hi, 1-d,lo,hi, 1-d,lo,lo);
+        }
+    }
+
+    static void arrayGateBody(
+            VertexConsumer c,
+            PoseStack.Pose pose,
+            int light,
+            Direction attachment
+    ) {
+        switch (attachment) {
+            case DOWN -> box(c, pose, light, 0,0,0, 1,.75F,1);
+            case UP -> box(c, pose, light, 0,.25F,0, 1,1,1);
+            case NORTH -> box(c, pose, light, 0,0,0, 1,1,.75F);
+            case SOUTH -> box(c, pose, light, 0,0,.25F, 1,1,1);
+            case WEST -> box(c, pose, light, 0,0,0, .75F,1,1);
+            case EAST -> box(c, pose, light, .25F,0,0, 1,1,1);
         }
     }
 
