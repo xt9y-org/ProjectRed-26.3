@@ -4,7 +4,7 @@ import dev.xt9y.projectred.integration.GatePart;
 import dev.xt9y.projectred.integration.GateType;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.item.DyeItem;
+import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.ItemStack;
 
 public final class MultipartInteractions {
@@ -28,11 +28,12 @@ public final class MultipartInteractions {
             }
 
             ItemStack held = player.getItemInHand(hand);
-            if (!(held.getItem() instanceof DyeItem dye)) {
+            DyeColor dye = DyeColor.getColor(held);
+            if (dye == null) {
                 return InteractionResult.PASS;
             }
 
-            int color = dye.getDyeColor().getId();
+            int color = dye.getId();
 
             // Upstream ProjectRed reserves black as the unlit display
             // background and does not allow it as the active digit colour.
