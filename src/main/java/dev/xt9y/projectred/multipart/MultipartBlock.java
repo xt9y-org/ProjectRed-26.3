@@ -1,6 +1,8 @@
 package dev.xt9y.projectred.multipart;
 
 import dev.xt9y.projectred.content.PRContent;
+import dev.xt9y.projectred.integration.GatePart;
+import dev.xt9y.projectred.integration.GateType;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.core.BlockPos;
@@ -19,6 +21,9 @@ import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.Nullable;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.phys.BlockHitResult;
 
 public final class MultipartBlock extends BaseEntityBlock {
     public MultipartBlock(Properties properties) {
@@ -50,6 +55,50 @@ public final class MultipartBlock extends BaseEntityBlock {
             if (!stack.isEmpty()) drops.add(stack);
         }
         return drops;
+    }
+
+    @Override
+    protected InteractionResult useWithoutItem(
+            BlockState state,
+            Level level,
+            BlockPos pos,
+            Player player,
+            BlockHitResult hit
+    ) {
+        if (!(level.getBlockEntity(pos) instanceof MultipartBlockEntity multipart)) {
+            return InteractionResult.PASS;
+        }
+
+        int slot = multipart.slotFromHit(hit.getLocation());
+        Part part = multipart.part(slot);
+        if (!(part instanceof GatePart gate)) {
+            return InteractionResult.PASS;
+        }
+
+        if (!level.isClientSide()) {
+            if (gate.type() == GateType.BUS_INPUT_PANEL) {
+                gate.togglePanelBit(multipart.panelBit(gate, hit.getLocation()));
+            } else if (gate.type() == GateType.TOGGLE_LATCH
+                    || gate.type() == GateType.REPEATER) {
+                gate.activate();
+            } else if (gate.type() == GateType.TIMER
+                    || gate.type() == GateType.SEQUENCER
+                    || gate.type() == GateType.STATE_CELL) {
+                // Until the dedicated ProjectRed timer GUI is ported, right click
+                // keeps the original configurable behavior available in-world.
+                gate.adjustTimer(player.isCrouching() ? -20 : 20);
+            } else if (gate.type() == GateType.COUNTER) {
+                gate.adjustCounterMax(player.isCrouching() ? -1 : 1);
+            } else {
+                return InteractionResult.PASS;
+            }
+
+            multipart.setChanged();
+            level.sendBlockUpdated(pos, state, state, 3);
+            level.updateNeighborsAt(pos, state.getBlock());
+        }
+
+        return InteractionResult.SUCCESS;
     }
 
     @Override
