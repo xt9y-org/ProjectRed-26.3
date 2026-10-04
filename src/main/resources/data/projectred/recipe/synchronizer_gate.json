@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "pattern": [
+    "WCW",
+    "SAS",
+    "WWW"
+  ],
+  "key": {
+    "A": "projectred:anode",
+    "C": "projectred:cathode",
+    "W": "projectred:conductive_plate",
+    "S": "projectred:silicon_chip"
+  },
+  "result": {
+    "id": "projectred:synchronizer_gate"
+  }
+}

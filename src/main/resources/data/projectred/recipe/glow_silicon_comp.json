@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "GGG",
+    "GSG",
+    "GGG"
+  ],
+  "key": {
+    "G": "minecraft:glowstone_dust",
+    "S": "projectred:silicon"
+  },
+  "result": {
+    "id": "projectred:glow_silicon_comp"
+  }
+}

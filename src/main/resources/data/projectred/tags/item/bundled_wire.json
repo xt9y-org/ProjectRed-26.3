@@ -1,0 +1,22 @@
+{
+  "replace": false,
+  "values": [
+    "projectred:neutral_bundled_wire",
+    "projectred:white_bundled_wire",
+    "projectred:orange_bundled_wire",
+    "projectred:magenta_bundled_wire",
+    "projectred:light_blue_bundled_wire",
+    "projectred:yellow_bundled_wire",
+    "projectred:lime_bundled_wire",
+    "projectred:pink_bundled_wire",
+    "projectred:gray_bundled_wire",
+    "projectred:light_gray_bundled_wire",
+    "projectred:cyan_bundled_wire",
+    "projectred:purple_bundled_wire",
+    "projectred:blue_bundled_wire",
+    "projectred:brown_bundled_wire",
+    "projectred:green_bundled_wire",
+    "projectred:red_bundled_wire",
+    "projectred:black_bundled_wire"
+  ]
+}

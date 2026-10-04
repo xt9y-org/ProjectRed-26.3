@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "minecraft:glowstone_dust",
+    "minecraft:glowstone_dust",
+    "minecraft:pink_dye",
+    "minecraft:pink_dye"
+  ],
+  "result": {
+    "id": "projectred:pink_illumar"
+  }
+}

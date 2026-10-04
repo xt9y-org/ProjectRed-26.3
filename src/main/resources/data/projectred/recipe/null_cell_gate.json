@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "pattern": [
+    "PWP",
+    "WFW",
+    "PWP"
+  ],
+  "key": {
+    "P": "projectred:plate",
+    "W": "projectred:wired_plate",
+    "F": "projectred:platformed_plate"
+  },
+  "result": {
+    "id": "projectred:null_cell_gate"
+  }
+}

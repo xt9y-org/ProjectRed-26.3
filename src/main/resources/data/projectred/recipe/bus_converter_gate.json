@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "pattern": [
+    "PBP",
+    "RSR",
+    "PRP"
+  ],
+  "key": {
+    "P": "projectred:plate",
+    "B": "projectred:bundled_plate",
+    "R": "projectred:conductive_plate",
+    "S": "projectred:silicon_chip"
+  },
+  "result": {
+    "id": "projectred:bus_converter_gate"
+  }
+}

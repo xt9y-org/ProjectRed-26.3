@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "pattern": [
+    "ACA",
+    "CAC",
+    "WWP"
+  ],
+  "key": {
+    "P": "projectred:plate",
+    "A": "projectred:anode",
+    "C": "projectred:cathode",
+    "W": "projectred:conductive_plate"
+  },
+  "result": {
+    "id": "projectred:pulse_gate"
+  }
+}

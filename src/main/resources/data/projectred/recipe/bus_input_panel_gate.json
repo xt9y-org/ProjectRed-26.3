@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "pattern": [
+    "BRB",
+    "BIB",
+    "BBB"
+  ],
+  "key": {
+    "B": "projectred:bundled_plate",
+    "R": "projectred:conductive_plate",
+    "I": "#projectred:illumar"
+  },
+  "result": {
+    "id": "projectred:bus_input_panel_gate"
+  }
+}

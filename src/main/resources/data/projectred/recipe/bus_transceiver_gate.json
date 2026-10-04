@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "pattern": [
+    "BBB",
+    "SPS",
+    "BBB"
+  ],
+  "key": {
+    "P": "projectred:plate",
+    "B": "projectred:bundled_plate",
+    "S": "projectred:silicon_chip"
+  },
+  "result": {
+    "id": "projectred:bus_transceiver_gate"
+  }
+}

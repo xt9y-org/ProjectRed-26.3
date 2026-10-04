@@ -1,0 +1,11 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "redstone",
+  "ingredients": [
+    "#projectred:bundled_wire",
+    "minecraft:light_gray_dye"
+  ],
+  "result": {
+    "id": "projectred:light_gray_bundled_wire"
+  }
+}

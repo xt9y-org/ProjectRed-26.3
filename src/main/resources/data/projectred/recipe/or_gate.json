@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "pattern": [
+    "PCP",
+    "WCW",
+    "PWP"
+  ],
+  "key": {
+    "P": "projectred:plate",
+    "C": "projectred:cathode",
+    "W": "projectred:conductive_plate"
+  },
+  "result": {
+    "id": "projectred:or_gate"
+  }
+}

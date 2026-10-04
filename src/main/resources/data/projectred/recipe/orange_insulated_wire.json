@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "pattern": [
+    "WRW",
+    "WRW",
+    "WRW"
+  ],
+  "key": {
+    "W": "minecraft:orange_wool",
+    "R": "projectred:red_ingot"
+  },
+  "result": {
+    "id": "projectred:orange_insulated_wire",
+    "count": 12
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "pattern": [
+    " S ",
+    "PPP"
+  ],
+  "key": {
+    "S": "projectred:infused_silicon",
+    "P": "projectred:plate"
+  },
+  "result": {
+    "id": "projectred:silicon_chip"
+  }
+}

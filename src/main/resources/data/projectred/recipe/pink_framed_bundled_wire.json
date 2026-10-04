@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "pattern": [
+    "SSS",
+    "SIS",
+    "SSS"
+  ],
+  "key": {
+    "S": "minecraft:stick",
+    "I": "projectred:pink_bundled_wire"
+  },
+  "result": {
+    "id": "projectred:pink_framed_bundled_wire"
+  }
+}

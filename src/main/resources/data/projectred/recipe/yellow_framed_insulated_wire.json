@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "pattern": [
+    "SSS",
+    "SIS",
+    "SSS"
+  ],
+  "key": {
+    "S": "minecraft:stick",
+    "I": "projectred:yellow_insulated_wire"
+  },
+  "result": {
+    "id": "projectred:yellow_framed_insulated_wire"
+  }
+}

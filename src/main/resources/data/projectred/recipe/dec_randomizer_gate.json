@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "pattern": [
+    "SCA",
+    "CCC",
+    "EWE"
+  ],
+  "key": {
+    "S": "projectred:silicon_chip",
+    "C": "projectred:cathode",
+    "A": "projectred:anode",
+    "E": "projectred:energized_silicon_chip",
+    "W": "projectred:conductive_plate"
+  },
+  "result": {
+    "id": "projectred:dec_randomizer_gate"
+  }
+}

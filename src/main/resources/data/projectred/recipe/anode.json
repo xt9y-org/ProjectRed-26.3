@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "pattern": [
+    " R ",
+    "RRR",
+    "PPP"
+  ],
+  "key": {
+    "R": "minecraft:redstone",
+    "P": "projectred:plate"
+  },
+  "result": {
+    "id": "projectred:anode",
+    "count": 3
+  }
+}

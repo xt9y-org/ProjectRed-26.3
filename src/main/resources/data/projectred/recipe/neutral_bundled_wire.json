@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "pattern": [
+    "SWS",
+    "WWW",
+    "SWS"
+  ],
+  "key": {
+    "S": "minecraft:string",
+    "W": "#projectred:insulated_wire"
+  },
+  "result": {
+    "id": "projectred:neutral_bundled_wire"
+  }
+}

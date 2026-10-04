@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "pattern": [
+    "PPP",
+    "BBB",
+    "PWP"
+  ],
+  "key": {
+    "P": "projectred:plate",
+    "W": "projectred:conductive_plate",
+    "B": "minecraft:blue_dye"
+  },
+  "result": {
+    "id": "projectred:light_sensor_gate"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "pattern": [
+    "CwC",
+    "WSW",
+    "PwC"
+  ],
+  "key": {
+    "P": "projectred:plate",
+    "C": "projectred:cathode",
+    "w": "projectred:conductive_plate",
+    "W": "projectred:wired_plate",
+    "S": "projectred:platformed_plate"
+  },
+  "result": {
+    "id": "projectred:and_cell_gate"
+  }
+}

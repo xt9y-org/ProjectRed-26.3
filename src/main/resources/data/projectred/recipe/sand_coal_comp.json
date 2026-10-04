@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "SSS",
+    "SCS",
+    "SSS"
+  ],
+  "key": {
+    "S": "minecraft:sand",
+    "C": "minecraft:coal_block"
+  },
+  "result": {
+    "id": "projectred:sand_coal_comp"
+  }
+}

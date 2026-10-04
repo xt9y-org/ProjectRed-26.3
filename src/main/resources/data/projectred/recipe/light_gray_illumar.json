@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "minecraft:glowstone_dust",
+    "minecraft:glowstone_dust",
+    "minecraft:light_gray_dye",
+    "minecraft:light_gray_dye"
+  ],
+  "result": {
+    "id": "projectred:light_gray_illumar"
+  }
+}

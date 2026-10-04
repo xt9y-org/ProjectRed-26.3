@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "pattern": [
+    "S",
+    "T",
+    "P"
+  ],
+  "key": {
+    "S": "minecraft:stone",
+    "T": "minecraft:redstone_torch",
+    "P": "projectred:plate"
+  },
+  "result": {
+    "id": "projectred:pointer"
+  }
+}

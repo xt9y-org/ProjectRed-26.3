@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "pattern": [
+    "PCP",
+    "CAC",
+    "PWP"
+  ],
+  "key": {
+    "P": "projectred:plate",
+    "A": "projectred:anode",
+    "C": "projectred:cathode",
+    "W": "projectred:conductive_plate"
+  },
+  "result": {
+    "id": "projectred:not_gate"
+  }
+}

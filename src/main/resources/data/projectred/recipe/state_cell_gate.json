@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "pattern": [
+    "PAC",
+    "WST",
+    "PWP"
+  ],
+  "key": {
+    "P": "projectred:plate",
+    "A": "projectred:anode",
+    "C": "projectred:cathode",
+    "W": "projectred:conductive_plate",
+    "T": "projectred:pointer",
+    "S": "projectred:silicon_chip"
+  },
+  "result": {
+    "id": "projectred:state_cell_gate"
+  }
+}

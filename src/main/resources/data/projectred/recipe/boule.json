@@ -1,0 +1,10 @@
+{
+  "type": "minecraft:smelting",
+  "category": "misc",
+  "ingredient": "projectred:sand_coal_comp",
+  "result": {
+    "id": "projectred:boule"
+  },
+  "experience": 0.5,
+  "cookingtime": 200
+}

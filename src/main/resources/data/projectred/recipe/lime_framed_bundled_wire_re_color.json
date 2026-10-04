@@ -1,0 +1,11 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "redstone",
+  "ingredients": [
+    "#projectred:framed_bundled_wire",
+    "minecraft:lime_dye"
+  ],
+  "result": {
+    "id": "projectred:lime_framed_bundled_wire"
+  }
+}

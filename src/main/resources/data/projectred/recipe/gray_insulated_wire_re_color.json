@@ -1,0 +1,11 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "redstone",
+  "ingredients": [
+    "#projectred:insulated_wire",
+    "minecraft:gray_dye"
+  ],
+  "result": {
+    "id": "projectred:gray_insulated_wire"
+  }
+}

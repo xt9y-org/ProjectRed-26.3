@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "pattern": [
+    "CPP",
+    "WLW",
+    "CPP"
+  ],
+  "key": {
+    "P": "projectred:plate",
+    "C": "projectred:cathode",
+    "W": "projectred:conductive_plate",
+    "L": "minecraft:lever"
+  },
+  "result": {
+    "id": "projectred:toggle_latch_gate"
+  }
+}

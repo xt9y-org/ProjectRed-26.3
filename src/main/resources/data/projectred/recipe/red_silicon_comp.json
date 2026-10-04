@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "RRR",
+    "RSR",
+    "RRR"
+  ],
+  "key": {
+    "R": "minecraft:redstone",
+    "S": "projectred:silicon"
+  },
+  "result": {
+    "id": "projectred:red_silicon_comp"
+  }
+}

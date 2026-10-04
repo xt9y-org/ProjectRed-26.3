@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "pattern": [
+    "PEP",
+    "WWW",
+    "EWE"
+  ],
+  "key": {
+    "P": "projectred:plate",
+    "W": "projectred:conductive_plate",
+    "E": "projectred:energized_silicon_chip"
+  },
+  "result": {
+    "id": "projectred:randomizer_gate"
+  }
+}

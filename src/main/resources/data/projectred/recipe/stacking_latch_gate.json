@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "pattern": [
+    "PCP",
+    "RCR",
+    "PCC"
+  ],
+  "key": {
+    "P": "projectred:plate",
+    "C": "projectred:cathode",
+    "R": "projectred:wired_plate"
+  },
+  "result": {
+    "id": "projectred:stacking_latch_gate"
+  }
+}

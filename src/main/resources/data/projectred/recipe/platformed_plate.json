@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "pattern": [
+    " R ",
+    "SPS",
+    "PRP"
+  ],
+  "key": {
+    "R": "projectred:conductive_plate",
+    "S": "minecraft:stick",
+    "P": "projectred:plate"
+  },
+  "result": {
+    "id": "projectred:platformed_plate"
+  }
+}

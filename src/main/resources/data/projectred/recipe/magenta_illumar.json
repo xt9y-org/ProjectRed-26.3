@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "minecraft:glowstone_dust",
+    "minecraft:glowstone_dust",
+    "minecraft:magenta_dye",
+    "minecraft:magenta_dye"
+  ],
+  "result": {
+    "id": "projectred:magenta_illumar"
+  }
+}

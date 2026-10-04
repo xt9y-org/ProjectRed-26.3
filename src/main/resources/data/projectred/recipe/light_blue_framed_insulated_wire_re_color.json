@@ -1,0 +1,11 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "redstone",
+  "ingredients": [
+    "#projectred:framed_insulated_wire",
+    "minecraft:light_blue_dye"
+  ],
+  "result": {
+    "id": "projectred:light_blue_framed_insulated_wire"
+  }
+}

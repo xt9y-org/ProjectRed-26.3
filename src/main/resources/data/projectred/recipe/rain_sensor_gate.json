@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "pattern": [
+    "PPP",
+    "SSS",
+    "PWP"
+  ],
+  "key": {
+    "P": "projectred:plate",
+    "W": "projectred:conductive_plate",
+    "S": "minecraft:slime_ball"
+  },
+  "result": {
+    "id": "projectred:rain_sensor_gate"
+  }
+}

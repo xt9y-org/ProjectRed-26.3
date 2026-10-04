@@ -1,0 +1,15 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "pattern": [
+    "W",
+    "P"
+  ],
+  "key": {
+    "W": "projectred:red_alloy_wire",
+    "P": "projectred:plate"
+  },
+  "result": {
+    "id": "projectred:wired_plate"
+  }
+}

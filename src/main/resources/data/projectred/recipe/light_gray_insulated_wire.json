@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "pattern": [
+    "WRW",
+    "WRW",
+    "WRW"
+  ],
+  "key": {
+    "W": "minecraft:light_gray_wool",
+    "R": "projectred:red_ingot"
+  },
+  "result": {
+    "id": "projectred:light_gray_insulated_wire",
+    "count": 12
+  }
+}

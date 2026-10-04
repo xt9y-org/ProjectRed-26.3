@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "pattern": [
+    "AWA",
+    "CAC",
+    "WCW"
+  ],
+  "key": {
+    "A": "projectred:anode",
+    "C": "projectred:cathode",
+    "W": "projectred:conductive_plate"
+  },
+  "result": {
+    "id": "projectred:xor_gate"
+  }
+}

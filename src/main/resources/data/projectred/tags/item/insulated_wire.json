@@ -1,0 +1,21 @@
+{
+  "replace": false,
+  "values": [
+    "projectred:white_insulated_wire",
+    "projectred:orange_insulated_wire",
+    "projectred:magenta_insulated_wire",
+    "projectred:light_blue_insulated_wire",
+    "projectred:yellow_insulated_wire",
+    "projectred:lime_insulated_wire",
+    "projectred:pink_insulated_wire",
+    "projectred:gray_insulated_wire",
+    "projectred:light_gray_insulated_wire",
+    "projectred:cyan_insulated_wire",
+    "projectred:purple_insulated_wire",
+    "projectred:blue_insulated_wire",
+    "projectred:brown_insulated_wire",
+    "projectred:green_insulated_wire",
+    "projectred:red_insulated_wire",
+    "projectred:black_insulated_wire"
+  ]
+}

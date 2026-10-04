@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "pattern": [
+    "PCP",
+    "CTC",
+    "PCP"
+  ],
+  "key": {
+    "P": "projectred:plate",
+    "C": "projectred:cathode",
+    "T": "projectred:pointer"
+  },
+  "result": {
+    "id": "projectred:sequencer_gate"
+  }
+}

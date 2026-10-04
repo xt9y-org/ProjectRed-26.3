@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "pattern": [
+    "ACA",
+    "WTW",
+    "PWP"
+  ],
+  "key": {
+    "P": "projectred:plate",
+    "A": "projectred:anode",
+    "C": "projectred:cathode",
+    "W": "projectred:conductive_plate",
+    "T": "projectred:pointer"
+  },
+  "result": {
+    "id": "projectred:timer_gate"
+  }
+}

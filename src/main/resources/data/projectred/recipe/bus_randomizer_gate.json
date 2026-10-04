@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "pattern": [
+    "BBB",
+    "RGR",
+    "BBB"
+  ],
+  "key": {
+    "R": "projectred:conductive_plate",
+    "B": "projectred:bundled_plate",
+    "G": "projectred:energized_silicon_chip"
+  },
+  "result": {
+    "id": "projectred:bus_randomizer_gate"
+  }
+}
