@@ -39,6 +39,7 @@ public final class MultipartBlockEntity extends BlockEntity {
     private final Part[] face = new Part[6];
     private Part center;
     private boolean handlingNeighborSignalChange;
+    private boolean initialSignalRefreshDone;
 
     public MultipartBlockEntity(BlockPos pos, BlockState state) {
         super(PRContent.MULTIPART_BE, pos, state);
@@ -46,6 +47,12 @@ public final class MultipartBlockEntity extends BlockEntity {
 
     public static void tick(Level level, BlockPos pos, BlockState state, MultipartBlockEntity be) {
         if (level.isClientSide()) return;
+
+        if (!be.initialSignalRefreshDone) {
+            be.initialSignalRefreshDone = true;
+            be.onNeighborSignalChanged();
+            return;
+        }
 
         boolean changed = false;
         List<Integer> unsupported = new ArrayList<>();
@@ -55,15 +62,20 @@ public final class MultipartBlockEntity extends BlockEntity {
                 unsupported.add(part.slot());
                 continue;
             }
-            if (part instanceof WirePart wire) changed |= wire.recompute(be);
+
+            // ProjectRed wires are event-driven. Only gates need a regular
+            // tick for timers, sensors and scheduled output transitions.
             if (part instanceof GatePart gate) {
                 gate.restoreWorldTimeBase(be);
                 changed |= gate.tick(be);
             }
         }
 
-        for (int slot : unsupported) be.removeAndDrop(slot);
-        if (changed) {
+        for (int slot : unsupported) {
+            changed |= be.removeAndDrop(slot);
+        }
+
+        if (changed && level.getBlockEntity(pos) == be) {
             be.syncChanged();
             be.propagateConnectedSignals();
         }
@@ -306,6 +318,9 @@ public final class MultipartBlockEntity extends BlockEntity {
         }
 
         syncChanged();
+        if (level != null && !level.isClientSide()) {
+            propagateConnectedSignals();
+        }
         return true;
     }
 
@@ -317,7 +332,11 @@ public final class MultipartBlockEntity extends BlockEntity {
 
         if (old != null) {
             syncChanged();
-            if (parts().isEmpty() && level != null) level.setBlock(worldPosition, Blocks.AIR.defaultBlockState(), 3);
+            if (parts().isEmpty() && level != null) {
+                level.setBlock(worldPosition, Blocks.AIR.defaultBlockState(), 3);
+            } else if (level != null && !level.isClientSide()) {
+                propagateConnectedSignals();
+            }
         }
         return old;
     }
@@ -1432,6 +1451,9 @@ public final class MultipartBlockEntity extends BlockEntity {
 
     public void markPartChanged() {
         syncChanged();
+        if (level != null && !level.isClientSide()) {
+            propagateConnectedSignals();
+        }
     }
 
     private void syncChanged() {
