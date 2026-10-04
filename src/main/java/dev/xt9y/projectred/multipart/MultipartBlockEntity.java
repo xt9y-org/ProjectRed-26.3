@@ -739,12 +739,16 @@ public final class MultipartBlockEntity extends BlockEntity {
 
         for (Part p : parts()) {
             if (p == receiver) continue;
+
             if (p instanceof WirePart wire
                     && wire.spec().family() != WireFamily.BUNDLED
                     && internalWireMeetsDirection(wire, direction)) {
-                max = Math.max(max, wire.signal());
+                max = Math.max(max, Math.max(0, wire.signal() - 1));
             } else if (p instanceof GatePart gate) {
-                max = Math.max(max, gateRawOutputToward(gate, direction.getOpposite()));
+                max = Math.max(
+                        max,
+                        gateRawOutputToward(gate, direction.getOpposite())
+                );
             }
         }
 
@@ -753,9 +757,27 @@ public final class MultipartBlockEntity extends BlockEntity {
         BlockPos neighborPos = worldPosition.relative(direction);
         BlockEntity neighbor = level.getBlockEntity(neighborPos);
         if (neighbor instanceof MultipartBlockEntity multipart) {
-            max = Math.max(max, multipart.rawSignal(direction.getOpposite()));
+            max = Math.max(
+                    max,
+                    multipart.arrayRedwireToward(direction.getOpposite())
+            );
         } else {
             max = Math.max(max, level.getSignal(neighborPos, direction) * 17);
+        }
+        return max;
+    }
+
+    private int arrayRedwireToward(Direction toward) {
+        int max = 0;
+        for (Part p : parts()) {
+            if (!partConnectsToward(p, toward)) continue;
+
+            if (p instanceof WirePart wire
+                    && wire.spec().family() != WireFamily.BUNDLED) {
+                max = Math.max(max, Math.max(0, wire.signal() - 1));
+            } else if (p instanceof GatePart gate) {
+                max = Math.max(max, gateRawOutputToward(gate, toward));
+            }
         }
         return max;
     }

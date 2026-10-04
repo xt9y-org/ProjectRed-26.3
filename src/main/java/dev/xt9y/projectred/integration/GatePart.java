@@ -373,8 +373,8 @@ public final class GatePart extends Part {
     private void tickArrayGate(MultipartBlockEntity owner) {
         int a = Math.max(owner.gateRedwireRawInput(this, 0), owner.gateRedwireRawInput(this, 2));
         int b = Math.max(owner.gateRedwireRawInput(this, 1), owner.gateRedwireRawInput(this, 3));
-        arraySignalA = Math.max(0, a - 1);
-        arraySignalB = Math.max(0, b - 1);
+        arraySignalA = Math.max(0, a);
+        arraySignalB = Math.max(0, b);
 
         if (type == GateType.NULL_CELL) return;
 
