@@ -474,7 +474,7 @@ public final class GatePart extends Part {
             }
             case COMPARATOR -> {
                 int left = owner.gateAnalogInput(this, 1);
-                int back = owner.gateAnalogInput(this, 2);
+                int back = owner.gateComparatorBackInput(this);
                 int right = owner.gateAnalogInput(this, 3);
                 int oldOut = state2 & 0xF;
                 int side = Math.max(left, right);
