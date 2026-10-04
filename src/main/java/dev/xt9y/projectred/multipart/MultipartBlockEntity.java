@@ -327,29 +327,73 @@ public final class MultipartBlockEntity extends BlockEntity {
 
     public VoxelShape shape() {
         VoxelShape out = Shapes.empty();
-        if (center != null) out = Shapes.or(out, Shapes.box(.375,.375,.375,.625,.625,.625));
+
+        if (center instanceof WirePart wire) {
+            out = Shapes.or(out, centerWireShape(visualWireConnections(wire)));
+        }
+
         for (int i = 0; i < 6; i++) {
-            if (face[i] == null) continue;
+            Part part = face[i];
+            if (part == null) continue;
+
             Direction side = Direction.values()[i];
-            out = Shapes.or(
-                    out,
-                    isArrayCell(face[i])
-                            ? arrayCellShape(side)
-                            : faceShape(side)
-            );
+            VoxelShape partShape;
+
+            if (part instanceof WirePart wire) {
+                partShape = faceWireShape(side, wire.spec().family());
+            } else if (part instanceof GatePart gate && gate.isArrayCell()) {
+                partShape = arrayCellShape(side);
+            } else {
+                partShape = gateFaceShape(side);
+            }
+
+            out = Shapes.or(out, partShape);
         }
         return out.isEmpty() ? Shapes.block() : out;
     }
 
-    private static VoxelShape faceShape(Direction d) {
-        return switch (d) {
-            case DOWN -> Shapes.box(.0625,0,.0625,.9375,.125,.9375);
-            case UP -> Shapes.box(.0625,.875,.0625,.9375,1,.9375);
-            case NORTH -> Shapes.box(.0625,.0625,0,.9375,.9375,.125);
-            case SOUTH -> Shapes.box(.0625,.0625,.875,.9375,.9375,1);
-            case WEST -> Shapes.box(0,.0625,.0625,.125,.9375,.9375);
-            case EAST -> Shapes.box(.875,.0625,.0625,1,.9375,.9375);
+    private static VoxelShape gateFaceShape(Direction d) {
+        return slabShape(d, .125);
+    }
+
+    private static VoxelShape faceWireShape(
+            Direction d,
+            WireFamily family
+    ) {
+        double depth = switch (family) {
+            case RED_ALLOY -> 2.0 / 16.0;
+            case INSULATED -> 3.0 / 16.0;
+            case BUNDLED -> 4.0 / 16.0;
         };
+        return slabShape(d, depth);
+    }
+
+    private static VoxelShape slabShape(Direction d, double depth) {
+        return switch (d) {
+            case DOWN -> Shapes.box(0,0,0,1,depth,1);
+            case UP -> Shapes.box(0,1-depth,0,1,1,1);
+            case NORTH -> Shapes.box(0,0,0,1,1,depth);
+            case SOUTH -> Shapes.box(0,0,1-depth,1,1,1);
+            case WEST -> Shapes.box(0,0,0,depth,1,1);
+            case EAST -> Shapes.box(1-depth,0,0,1,1,1);
+        };
+    }
+
+    private static VoxelShape centerWireShape(int connections) {
+        VoxelShape out = Shapes.box(.25,.25,.25,.75,.75,.75);
+
+        for (Direction direction : Direction.values()) {
+            if ((connections & (1 << direction.ordinal())) == 0) continue;
+            out = Shapes.or(out, switch (direction) {
+                case DOWN -> Shapes.box(.25,0,.25,.75,.25,.75);
+                case UP -> Shapes.box(.25,.75,.25,.75,1,.75);
+                case NORTH -> Shapes.box(.25,.25,0,.75,.75,.25);
+                case SOUTH -> Shapes.box(.25,.25,.75,.75,.75,1);
+                case WEST -> Shapes.box(0,.25,.25,.25,.75,.75);
+                case EAST -> Shapes.box(.75,.25,.25,1,.75,.75);
+            });
+        }
+        return out;
     }
 
     private static VoxelShape arrayCellShape(Direction d) {
@@ -364,12 +408,7 @@ public final class MultipartBlockEntity extends BlockEntity {
     }
 
     private static boolean isArrayCell(Part part) {
-        if (!(part instanceof GatePart gate)) return false;
-        return switch (gate.type()) {
-            case NULL_CELL, INVERT_CELL, BUFFER_CELL,
-                    AND_CELL, TRANSPARENT_LATCH_CELL -> true;
-            default -> false;
-        };
+        return part instanceof GatePart gate && gate.isArrayCell();
     }
 
     public int calculateRedwireInput(WirePart receiver) {
