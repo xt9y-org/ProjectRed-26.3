@@ -1219,7 +1219,7 @@ public final class MultipartBlockEntity extends BlockEntity {
             if (localToWorld(attachment, gate.rotation(), local) != toward) continue;
             return bundled
                     ? gate.canConnectBundledLocal(local)
-                    : gate.canConnectLocal(local);
+                    : gate.canConnectRedstoneLocal(local);
         }
         return false;
     }

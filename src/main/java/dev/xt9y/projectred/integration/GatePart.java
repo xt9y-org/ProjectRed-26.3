@@ -195,8 +195,8 @@ public final class GatePart extends Part {
         scheduleWithoutOwner();
     }
 
-    public boolean canConnectLocal(int r) {
-        int mask = inputMask() | outputMask() | redwireMask() | bundledInputMask() | bundledOutputMask();
+    public boolean canConnectRedstoneLocal(int r) {
+        int mask = inputMask() | outputMask() | redwireMask();
         return (mask & (1 << (r & 3))) != 0;
     }
 
