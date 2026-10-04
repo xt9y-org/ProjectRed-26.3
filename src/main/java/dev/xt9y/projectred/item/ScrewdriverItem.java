@@ -22,6 +22,15 @@ public final class ScrewdriverItem extends Item {
         if (!context.getLevel().isClientSide()) {
             if (context.getPlayer() != null && context.getPlayer().isCrouching()) gate.cycleShape();
             else gate.rotate();
+
+            if (context.getPlayer() != null) {
+                context.getItemInHand().hurtAndBreak(
+                        1,
+                        context.getPlayer(),
+                        context.getHand()
+                );
+            }
+
             be.setChanged();
             context.getLevel().sendBlockUpdated(context.getClickedPos(), context.getLevel().getBlockState(context.getClickedPos()), context.getLevel().getBlockState(context.getClickedPos()), 3);
         }

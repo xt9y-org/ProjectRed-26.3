@@ -102,7 +102,12 @@ public final class PRContent {
             GATE_ITEMS.put(type, registerPartItem(type.id(), properties -> new PartItem(type, properties)));
         }
 
-        SCREWDRIVER = registerPartItem("screwdriver", properties -> new ScrewdriverItem(properties.stacksTo(1)));
+        SCREWDRIVER = registerPartItem(
+                "screwdriver",
+                properties -> new ScrewdriverItem(
+                        properties.stacksTo(1).durability(128)
+                )
+        );
 
         ResourceKey<CreativeModeTab> key = ResourceKey.create(BuiltInRegistries.CREATIVE_MODE_TAB.key(), ProjectRed263.id("main"));
         TAB = Registry.register(BuiltInRegistries.CREATIVE_MODE_TAB, key,
