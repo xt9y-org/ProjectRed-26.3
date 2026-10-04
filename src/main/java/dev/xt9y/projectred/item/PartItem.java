@@ -41,10 +41,11 @@ public final class PartItem extends Item {
 
         if (level.getBlockEntity(clicked) instanceof MultipartBlockEntity existing) {
             int slot = slotFor(clickedFace);
-            if (!existing.hasSlot(slot)
-                    && canSupport(level, clicked, slot)) {
-                if (!level.isClientSide()) {
-                    existing.add(create(slot, context));
+            Part candidate = create(slot, context);
+            if (canSupport(level, clicked, slot)
+                    && existing.canAdd(candidate)) {
+                if (!level.isClientSide()
+                        && existing.add(candidate)) {
                     consume(context.getPlayer(), context);
                 }
                 return InteractionResult.SUCCESS;
@@ -59,10 +60,12 @@ public final class PartItem extends Item {
             if (level.isEmptyBlock(target)) {
                 level.setBlock(target, PRContent.MULTIPART.defaultBlockState(), 3);
             }
-            if (level.getBlockEntity(target) instanceof MultipartBlockEntity be && !be.hasSlot(slot)) {
-                be.add(create(slot, context));
-                consume(context.getPlayer(), context);
-                return InteractionResult.SUCCESS;
+            if (level.getBlockEntity(target) instanceof MultipartBlockEntity be) {
+                Part candidate = create(slot, context);
+                if (be.add(candidate)) {
+                    consume(context.getPlayer(), context);
+                    return InteractionResult.SUCCESS;
+                }
             }
             return InteractionResult.FAIL;
         }
