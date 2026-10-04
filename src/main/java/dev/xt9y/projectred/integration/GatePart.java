@@ -818,7 +818,7 @@ public final class GatePart extends Part {
     private int bundledOutputMask() {
         return switch (type) {
             case BUS_TRANSCEIVER -> 0x5;
-            case BUS_RANDOMIZER -> 1;
+            case BUS_RANDOMIZER -> 0x5;
             case BUS_CONVERTER -> shape == 0 ? 1 : 0;
             case BUS_INPUT_PANEL -> 4;
             default -> 0;
