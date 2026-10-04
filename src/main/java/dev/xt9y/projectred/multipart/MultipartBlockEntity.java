@@ -24,7 +24,7 @@ import net.minecraft.world.entity.decoration.ItemFrame;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.RedStoneWireBlock;
+import net.minecraft.world.level.block.RedstoneWireBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.ValueInput;
@@ -364,7 +364,7 @@ public final class MultipartBlockEntity extends BlockEntity {
         if (neighborState.is(Blocks.REDSTONE_WIRE)) {
             if (receiver.center()) return 0;
             return Math.max(
-                    neighborState.getValue(RedStoneWireBlock.POWER) - 1,
+                    neighborState.getValue(RedstoneWireBlock.POWER) - 1,
                     0
             );
         }
