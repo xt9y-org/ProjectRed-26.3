@@ -17,6 +17,9 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '9.8.0'
+      - name: Validate redstone-only parity manifest
+        run: python3 scripts/validate_redstone_scope.py
+
       - run: gradle clean build --stacktrace --no-daemon
 
       - name: Smoke-test Fabric server
