@@ -586,10 +586,19 @@ public final class MultipartBlockEntity extends BlockEntity {
             if (direction.getAxis() == attachment.getAxis()) continue;
             if (!faceWireExternalOpen(receiver, direction)) continue;
 
-            int straight = readStraightRedwire(receiver, direction, attachment);
-            if (straight > 0) {
-                max = Math.max(max, straight);
-            } else if (outsideCornerEdgeOpen(direction, attachment)) {
+            boolean straightConnected = hasStraightWireConnection(
+                    receiver,
+                    direction,
+                    attachment
+            );
+
+            if (straightConnected) {
+                max = Math.max(
+                        max,
+                        readStraightRedwire(receiver, direction, attachment)
+                );
+            } else if (outsideCornerEdgeOpen(direction, attachment)
+                    && hasCornerWireConnection(receiver, direction, attachment)) {
                 max = Math.max(
                         max,
                         readCornerRedwire(receiver, direction, attachment)
@@ -727,23 +736,26 @@ public final class MultipartBlockEntity extends BlockEntity {
             if (direction.getAxis() == attachment.getAxis()) continue;
             if (!faceWireExternalOpen(receiver, direction)) continue;
 
-            BlockEntity neighbor = level.getBlockEntity(
-                    worldPosition.relative(direction)
+            boolean straightConnected = hasStraightWireConnection(
+                    receiver,
+                    direction,
+                    attachment
             );
-            boolean straightFound = false;
-            if (neighbor instanceof MultipartBlockEntity multipart) {
-                int[] straight = multipart.bundledToward(
-                        direction.getOpposite(),
-                        receiver.spec(),
-                        attachment
-                );
-                if (!BundledSignals.isZero(straight)) {
-                    out = BundledSignals.raise(out, straight, false);
-                    straightFound = true;
-                }
-            }
 
-            if (!straightFound && outsideCornerEdgeOpen(direction, attachment)) {
+            if (straightConnected) {
+                BlockEntity neighbor = level.getBlockEntity(
+                        worldPosition.relative(direction)
+                );
+                if (neighbor instanceof MultipartBlockEntity multipart) {
+                    int[] straight = multipart.bundledToward(
+                            direction.getOpposite(),
+                            receiver.spec(),
+                            attachment
+                    );
+                    out = BundledSignals.raise(out, straight, false);
+                }
+            } else if (outsideCornerEdgeOpen(direction, attachment)
+                    && hasCornerWireConnection(receiver, direction, attachment)) {
                 BlockPos cornerPos = worldPosition
                         .relative(direction)
                         .relative(attachment);
