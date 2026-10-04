@@ -206,9 +206,19 @@ public final class MultipartBlockEntity extends BlockEntity {
             if (existing == null || existing == ignored) continue;
 
             boolean existingArray = isArrayCell(existing);
-            if (!candidateArray && !existingArray) continue;
-
             Direction existingSide = Direction.values()[existing.slot()];
+
+            if (!candidateArray && !existingArray) {
+                if (candidate instanceof GatePart
+                        && existing instanceof GatePart
+                        && candidateSide.getAxis() != existingSide.getAxis()) {
+                    // GatePart's upstream cross-shaped occlusion volume
+                    // intersects another gate mounted on a perpendicular
+                    // face. Opposite-face gates remain valid.
+                    return false;
+                }
+                continue;
+            }
 
             if (candidateArray && existingArray) {
                 if (!arrayCellsCanCross(candidate, existing)) {
