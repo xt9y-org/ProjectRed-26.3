@@ -149,68 +149,250 @@ public final class MultipartBlockEntity extends BlockEntity {
     }
 
     public int calculateRedwireInput(WirePart receiver) {
-        int max = 0;
-        for (Part p : parts()) {
-            if (p == receiver || !(p instanceof WirePart other)) continue;
-            if (!receiver.canConnect(other)) continue;
-            if (other.spec().family() == WireFamily.BUNDLED && receiver.spec().family() == WireFamily.INSULATED) {
-                max = Math.max(max, Math.max(0, other.bundled()[receiver.spec().color()] - 1));
+        int max = internalRedwireInput(receiver);
+
+        if (level == null) return max;
+
+        if (receiver.center()) {
+            for (Direction direction : Direction.values()) {
+                max = Math.max(max, readStraightRedwire(receiver, direction, null));
+            }
+            return Math.max(0, Math.min(255, max));
+        }
+
+        Direction attachment = Direction.values()[receiver.slot()];
+        for (Direction direction : Direction.values()) {
+            if (direction.getAxis() == attachment.getAxis()) continue;
+
+            int straight = readStraightRedwire(receiver, direction, attachment);
+            if (straight > 0) {
+                max = Math.max(max, straight);
             } else {
-                max = Math.max(max, Math.max(0, other.signal() - 1));
+                max = Math.max(max, readCornerRedwire(receiver, direction, attachment));
             }
         }
 
-        if (level == null) return max;
-        for (Direction d : Direction.values()) {
-            BlockPos np = worldPosition.relative(d);
-            BlockEntity nbe = level.getBlockEntity(np);
-            if (nbe instanceof MultipartBlockEntity mp) {
-                max = Math.max(max, mp.redwireToward(d.getOpposite(), receiver.spec(), true));
-            } else {
-                max = Math.max(max, level.getSignal(np, d) * 17);
+        // Red-alloy wire is the only transmission wire that powers through
+        // its support face in upstream ProjectRed.
+        if (receiver.spec().family() == WireFamily.RED_ALLOY) {
+            BlockPos support = worldPosition.relative(attachment);
+            max = Math.max(max, level.getSignal(support, attachment) * 17);
+        }
+
+        return Math.max(0, Math.min(255, max));
+    }
+
+    private int internalRedwireInput(WirePart receiver) {
+        int max = 0;
+        for (Part p : parts()) {
+            if (p == receiver || !internallyTouches(receiver, p)) continue;
+
+            if (p instanceof WirePart other) {
+                if (!receiver.canConnect(other)) continue;
+
+                if (other.spec().family() == WireFamily.BUNDLED
+                        && receiver.spec().family() == WireFamily.INSULATED) {
+                    max = Math.max(
+                            max,
+                            Math.max(0, other.bundled()[receiver.spec().color()] - 1)
+                    );
+                } else {
+                    max = Math.max(max, Math.max(0, other.signal() - 1));
+                }
+            } else if (p instanceof GatePart gate) {
+                if (receiver.center()) {
+                    for (int local = 0; local < 4; local++) {
+                        max = Math.max(max, Math.max(0, gate.outputRawLocal(local) - 1));
+                    }
+                } else {
+                    Direction toward = Direction.values()[receiver.slot()];
+                    max = Math.max(
+                            max,
+                            Math.max(0, gateRawOutputToward(gate, toward) - 1)
+                    );
+                }
             }
         }
         return max;
     }
 
-    public int[] calculateBundledInput(WirePart receiver) {
-        int[] out = new int[16];
-        for (Part p : parts()) {
-            if (p == receiver || !(p instanceof WirePart other) || !receiver.canConnect(other)) continue;
-            out = BundledSignals.raise(out, other.bundledSignal(), true);
+    private int readStraightRedwire(
+            WirePart receiver,
+            Direction direction,
+            Direction expectedAttachment
+    ) {
+        BlockPos neighborPos = worldPosition.relative(direction);
+        BlockEntity neighbor = level.getBlockEntity(neighborPos);
+
+        if (neighbor instanceof MultipartBlockEntity multipart) {
+            int raw = multipart.redwireToward(
+                    direction.getOpposite(),
+                    receiver.spec(),
+                    expectedAttachment
+            );
+            return Math.max(0, raw - 1);
         }
-        if (level != null) {
-            for (Direction d : Direction.values()) {
-                BlockEntity nbe = level.getBlockEntity(worldPosition.relative(d));
-                if (nbe instanceof MultipartBlockEntity mp) {
-                    out = BundledSignals.raise(out, mp.bundledToward(d.getOpposite(), receiver.spec()), true);
+
+        return level.getSignal(neighborPos, direction) * 17;
+    }
+
+    private int readCornerRedwire(
+            WirePart receiver,
+            Direction direction,
+            Direction attachment
+    ) {
+        BlockPos cornerPos = worldPosition.relative(direction).relative(attachment);
+        BlockEntity corner = level.getBlockEntity(cornerPos);
+        if (!(corner instanceof MultipartBlockEntity multipart)) return 0;
+
+        int raw = multipart.cornerRedwireSignal(
+                direction.getOpposite(),
+                receiver.spec()
+        );
+        return Math.max(0, raw - 1);
+    }
+
+    public int[] calculateBundledInput(WirePart receiver) {
+        int[] out = internalBundledInput(receiver);
+
+        if (level == null) return out;
+
+        if (receiver.center()) {
+            for (Direction direction : Direction.values()) {
+                BlockEntity neighbor = level.getBlockEntity(worldPosition.relative(direction));
+                if (neighbor instanceof MultipartBlockEntity multipart) {
+                    out = BundledSignals.raise(
+                            out,
+                            multipart.bundledToward(
+                                    direction.getOpposite(),
+                                    receiver.spec(),
+                                    null
+                            ),
+                            true
+                    );
+                }
+            }
+            return out;
+        }
+
+        Direction attachment = Direction.values()[receiver.slot()];
+        for (Direction direction : Direction.values()) {
+            if (direction.getAxis() == attachment.getAxis()) continue;
+
+            BlockEntity neighbor = level.getBlockEntity(worldPosition.relative(direction));
+            boolean straightFound = false;
+            if (neighbor instanceof MultipartBlockEntity multipart) {
+                int[] straight = multipart.bundledToward(
+                        direction.getOpposite(),
+                        receiver.spec(),
+                        attachment
+                );
+                if (!BundledSignals.isZero(straight)) {
+                    out = BundledSignals.raise(out, straight, true);
+                    straightFound = true;
+                }
+            }
+
+            if (!straightFound) {
+                BlockPos cornerPos = worldPosition.relative(direction).relative(attachment);
+                BlockEntity corner = level.getBlockEntity(cornerPos);
+                if (corner instanceof MultipartBlockEntity multipart) {
+                    int[] cornerSignal = multipart.cornerBundledSignal(
+                            direction.getOpposite(),
+                            receiver.spec()
+                    );
+                    out = BundledSignals.raise(out, cornerSignal, true);
                 }
             }
         }
         return out;
     }
 
-    private int redwireToward(Direction toward, WireSpec receiver, boolean attenuate) {
+    private int[] internalBundledInput(WirePart receiver) {
+        int[] out = new int[16];
+        for (Part p : parts()) {
+            if (p == receiver || !internallyTouches(receiver, p)) continue;
+
+            if (p instanceof WirePart other && receiver.canConnect(other)) {
+                out = BundledSignals.raise(out, other.bundledSignal(), true);
+            } else if (p instanceof GatePart gate) {
+                if (receiver.center()) {
+                    for (int local = 0; local < 4; local++) {
+                        out = BundledSignals.raise(out, gate.bundledOutputLocal(local), false);
+                    }
+                } else {
+                    out = BundledSignals.raise(
+                            out,
+                            gateBundledOutputToward(gate, Direction.values()[receiver.slot()]),
+                            false
+                    );
+                }
+            }
+        }
+        return out;
+    }
+
+    private int redwireToward(
+            Direction toward,
+            WireSpec receiver,
+            Direction expectedAttachment
+    ) {
         int max = 0;
         for (Part p : parts()) {
+            if (!partConnectsToward(p, toward)) continue;
+
             if (p instanceof WirePart wire) {
-                if (wire.spec().family() == WireFamily.BUNDLED && receiver.family() == WireFamily.INSULATED) {
+                if (!straightAttachmentMatches(wire, expectedAttachment)) continue;
+
+                if (wire.spec().family() == WireFamily.BUNDLED
+                        && receiver.family() == WireFamily.INSULATED) {
                     max = Math.max(max, wire.bundled()[receiver.color()]);
                 } else if (receiver.redwireCompatible(wire.spec())) {
                     max = Math.max(max, wire.signal());
                 }
             } else if (p instanceof GatePart gate) {
+                if (expectedAttachment != null
+                        && Direction.values()[gate.slot()] != expectedAttachment) {
+                    continue;
+                }
                 max = Math.max(max, gateRawOutputToward(gate, toward));
             }
         }
-        return attenuate ? Math.max(0, max - 1) : max;
+        return max;
     }
 
-    private int[] bundledToward(Direction toward, WireSpec receiver) {
+    private int cornerRedwireSignal(
+            Direction expectedAttachment,
+            WireSpec receiver
+    ) {
+        Part p = face[expectedAttachment.ordinal()];
+        if (p instanceof WirePart wire) {
+            if (wire.spec().family() == WireFamily.BUNDLED
+                    && receiver.family() == WireFamily.INSULATED) {
+                return wire.bundled()[receiver.color()];
+            }
+            return receiver.redwireCompatible(wire.spec()) ? wire.signal() : 0;
+        }
+        if (p instanceof GatePart gate) {
+            return gateRawOutputToward(gate, expectedAttachment.getOpposite());
+        }
+        return 0;
+    }
+
+    private int[] bundledToward(
+            Direction toward,
+            WireSpec receiver,
+            Direction expectedAttachment
+    ) {
         int[] out = new int[16];
         for (Part p : parts()) {
+            if (!partConnectsToward(p, toward)) continue;
+
             if (p instanceof WirePart wire) {
-                if (wire.spec().family() == WireFamily.BUNDLED && receiver.bundledCompatible(wire.spec())) {
+                if (!straightAttachmentMatches(wire, expectedAttachment)) continue;
+
+                if (wire.spec().family() == WireFamily.BUNDLED
+                        && receiver.bundledCompatible(wire.spec())) {
                     out = BundledSignals.raise(out, wire.bundled(), false);
                 } else if (wire.spec().family() == WireFamily.INSULATED) {
                     int[] one = new int[16];
@@ -218,10 +400,61 @@ public final class MultipartBlockEntity extends BlockEntity {
                     out = BundledSignals.raise(out, one, false);
                 }
             } else if (p instanceof GatePart gate) {
-                out = BundledSignals.raise(out, gateBundledOutputToward(gate, toward), false);
+                if (expectedAttachment != null
+                        && Direction.values()[gate.slot()] != expectedAttachment) {
+                    continue;
+                }
+                out = BundledSignals.raise(
+                        out,
+                        gateBundledOutputToward(gate, toward),
+                        false
+                );
             }
         }
         return out;
+    }
+
+    private int[] cornerBundledSignal(
+            Direction expectedAttachment,
+            WireSpec receiver
+    ) {
+        Part p = face[expectedAttachment.ordinal()];
+        if (p instanceof WirePart wire) {
+            if (wire.spec().family() == WireFamily.BUNDLED
+                    && receiver.bundledCompatible(wire.spec())) {
+                return wire.bundled();
+            }
+            if (wire.spec().family() == WireFamily.INSULATED) {
+                int[] out = new int[16];
+                out[wire.spec().color()] = wire.signal();
+                return out;
+            }
+        }
+        if (p instanceof GatePart gate) {
+            return gateBundledOutputToward(gate, expectedAttachment.getOpposite());
+        }
+        return null;
+    }
+
+    private static boolean straightAttachmentMatches(
+            WirePart wire,
+            Direction expectedAttachment
+    ) {
+        if (expectedAttachment == null || wire.center()) return true;
+        return Direction.values()[wire.slot()] == expectedAttachment;
+    }
+
+    private static boolean partConnectsToward(Part part, Direction toward) {
+        if (part.center()) return true;
+        Direction attachment = Direction.values()[part.slot()];
+        return attachment.getAxis() != toward.getAxis();
+    }
+
+    private static boolean internallyTouches(Part a, Part b) {
+        if (a.center() || b.center()) return true;
+        Direction da = Direction.values()[a.slot()];
+        Direction db = Direction.values()[b.slot()];
+        return da.getAxis() != db.getAxis();
     }
 
     public int gateRedwireRawInput(GatePart receiver, int local) {
