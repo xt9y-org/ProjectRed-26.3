@@ -20,8 +20,20 @@ public final class ScrewdriverItem extends Item {
         if (!(part instanceof GatePart gate)) return InteractionResult.PASS;
 
         if (!context.getLevel().isClientSide()) {
-            if (context.getPlayer() != null && context.getPlayer().isCrouching()) gate.cycleShape();
-            else gate.rotate();
+            if (context.getPlayer() != null && context.getPlayer().isCrouching()) {
+                gate.cycleShape();
+            } else {
+                gate.rotate();
+                if (!be.canRemainAfterGeometryChange(gate)) {
+                    // ArrayGatePart::rotate() in upstream asks CBMultipart
+                    // whether the rotated part still fits. Undo the rotation
+                    // when a crossing array cell would become occluded.
+                    gate.rotate();
+                    gate.rotate();
+                    gate.rotate();
+                    return InteractionResult.FAIL;
+                }
+            }
 
             if (context.getPlayer() != null) {
                 context.getItemInHand().hurtAndBreak(

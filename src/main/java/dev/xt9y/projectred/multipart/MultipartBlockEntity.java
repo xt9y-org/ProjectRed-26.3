@@ -169,22 +169,38 @@ public final class MultipartBlockEntity extends BlockEntity {
     }
 
     public boolean canAdd(Part part) {
-        if (part == null || hasSlot(part.slot())) return false;
+        return part != null
+                && !hasSlot(part.slot())
+                && fitsWithExistingParts(part, null);
+    }
 
-        if (part.center()) {
+    public boolean canRemainAfterGeometryChange(Part part) {
+        return part != null
+                && part(part.slot()) == part
+                && fitsWithExistingParts(part, part);
+    }
+
+    private boolean fitsWithExistingParts(
+            Part candidate,
+            Part ignored
+    ) {
+        if (candidate.center()) {
             for (Part existing : face) {
+                if (existing == ignored) continue;
                 if (isArrayCell(existing)) return false;
             }
             return true;
         }
 
-        Direction candidateSide = Direction.values()[part.slot()];
-        boolean candidateArray = isArrayCell(part);
+        Direction candidateSide = Direction.values()[candidate.slot()];
+        boolean candidateArray = isArrayCell(candidate);
 
-        if (candidateArray && center != null) return false;
+        if (candidateArray && center != null && center != ignored) {
+            return false;
+        }
 
         for (Part existing : face) {
-            if (existing == null) continue;
+            if (existing == null || existing == ignored) continue;
 
             boolean existingArray = isArrayCell(existing);
             if (!candidateArray && !existingArray) continue;
@@ -192,7 +208,7 @@ public final class MultipartBlockEntity extends BlockEntity {
             Direction existingSide = Direction.values()[existing.slot()];
 
             if (candidateArray && existingArray) {
-                if (!arrayCellsCanCross(part, existing)) {
+                if (!arrayCellsCanCross(candidate, existing)) {
                     return false;
                 }
                 continue;
