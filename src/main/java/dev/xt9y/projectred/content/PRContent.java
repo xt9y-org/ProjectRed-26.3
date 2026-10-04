@@ -28,8 +28,47 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 
 public final class PRContent {
+    public static final Map<String, Item> CORE_ITEMS = new LinkedHashMap<>();
     public static final Map<String, Item> WIRE_ITEMS = new LinkedHashMap<>();
     public static final Map<GateType, Item> GATE_ITEMS = new LinkedHashMap<>();
+
+    private static final String[] CORE_COMPONENT_IDS = {
+            "red_ingot",
+            "plate",
+            "conductive_plate",
+            "wired_plate",
+            "bundled_plate",
+            "platformed_plate",
+            "anode",
+            "cathode",
+            "pointer",
+            "silicon_chip",
+            "energized_silicon_chip",
+            "sand_coal_comp",
+            "red_iron_comp",
+            "boule",
+            "silicon",
+            "red_silicon_comp",
+            "glow_silicon_comp",
+            "infused_silicon",
+            "energized_silicon",
+            "white_illumar",
+            "orange_illumar",
+            "magenta_illumar",
+            "light_blue_illumar",
+            "yellow_illumar",
+            "lime_illumar",
+            "pink_illumar",
+            "gray_illumar",
+            "light_gray_illumar",
+            "cyan_illumar",
+            "purple_illumar",
+            "blue_illumar",
+            "brown_illumar",
+            "green_illumar",
+            "red_illumar",
+            "black_illumar"
+    };
 
     public static final MultipartBlock MULTIPART;
     public static final BlockEntityType<MultipartBlockEntity> MULTIPART_BE;
@@ -48,6 +87,13 @@ public final class PRContent {
                 FabricBlockEntityTypeBuilder.create(MultipartBlockEntity::new, MULTIPART).build()
         );
 
+        for (String id : CORE_COMPONENT_IDS) {
+            CORE_ITEMS.put(
+                    id,
+                    registerPartItem(id, properties -> new Item(properties))
+            );
+        }
+
         for (WireSpec spec : WireSpec.all()) {
             WIRE_ITEMS.put(spec.id(), registerPartItem(spec.id(), properties -> new PartItem(spec, properties)));
         }
@@ -64,6 +110,7 @@ public final class PRContent {
                         .title(Component.translatable("creativeTab.projectred"))
                         .icon(() -> new ItemStack(WIRE_ITEMS.get("red_alloy_wire")))
                         .displayItems((params, output) -> {
+                            CORE_ITEMS.values().forEach(output::accept);
                             WIRE_ITEMS.values().forEach(output::accept);
                             GATE_ITEMS.values().forEach(output::accept);
                             output.accept(SCREWDRIVER);
