@@ -42,6 +42,21 @@ public final class MultipartBlock extends BaseEntityBlock {
     }
 
     @Override
+    protected boolean shouldRedstoneWireConnectTo(
+            BlockState state,
+            BlockGetter level,
+            BlockPos pos,
+            @Nullable Direction direction
+    ) {
+        if (direction == null) {
+            return false;
+        }
+
+        return level.getBlockEntity(pos) instanceof MultipartBlockEntity be
+                && be.canConnectVanillaRedstone(direction);
+    }
+
+    @Override
     protected int getSignal(BlockState state, BlockGetter level, BlockPos pos, Direction direction) {
         return level.getBlockEntity(pos) instanceof MultipartBlockEntity be ? be.vanillaSignal(direction) : 0;
     }

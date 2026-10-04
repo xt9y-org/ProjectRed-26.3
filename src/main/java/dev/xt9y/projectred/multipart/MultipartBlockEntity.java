@@ -945,6 +945,21 @@ public final class MultipartBlockEntity extends BlockEntity {
         return out;
     }
 
+    public boolean canConnectVanillaRedstone(Direction toward) {
+        for (Part p : parts()) {
+            if (p instanceof WirePart wire) {
+                if (wire.spec().family() != WireFamily.BUNDLED
+                        && partConnectsToward(wire, toward)) {
+                    return true;
+                }
+            } else if (p instanceof GatePart gate
+                    && gateConnectsToward(gate, toward, false)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public int vanillaSignal(Direction toward) {
         int max = 0;
         for (Part p : parts()) {
