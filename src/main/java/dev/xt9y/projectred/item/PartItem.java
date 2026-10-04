@@ -41,7 +41,8 @@ public final class PartItem extends Item {
 
         if (level.getBlockEntity(clicked) instanceof MultipartBlockEntity existing) {
             int slot = slotFor(clickedFace);
-            if (!existing.hasSlot(slot)) {
+            if (!existing.hasSlot(slot)
+                    && canSupport(level, clicked, slot)) {
                 if (!level.isClientSide()) {
                     existing.add(create(slot, context));
                     consume(context.getPlayer(), context);
