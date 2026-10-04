@@ -11,7 +11,8 @@
   "license": "MIT",
   "environment": "*",
   "entrypoints": {
-    "main": ["dev.xt9y.projectred.ProjectRed263"]
+    "main": ["dev.xt9y.projectred.ProjectRed263"],
+    "client": ["dev.xt9y.projectred.client.ProjectRed263Client"]
   },
   "depends": {
     "fabricloader": ">=0.19.5",
