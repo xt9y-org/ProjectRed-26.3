@@ -61,6 +61,12 @@ public final class PRNetworking {
                 instanceof MultipartBlockEntity multipart)) return;
         if (!multipart.hasSlot(payload.slot())) return;
 
+        if (player.isCreative()) {
+            BREAK_TARGETS.remove(player.getUUID());
+            multipart.remove(payload.slot());
+            return;
+        }
+
         BREAK_TARGETS.put(
                 player.getUUID(),
                 new BreakTarget(payload.pos().immutable(), payload.slot())

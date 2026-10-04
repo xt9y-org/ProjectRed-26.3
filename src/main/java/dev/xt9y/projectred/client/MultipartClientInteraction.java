@@ -39,7 +39,9 @@ public final class MultipartClientInteraction {
                     // progress/hardness still applies. The server intercepts
                     // the completed block break and removes only this slot.
                     ClientPlayNetworking.send(new MultipartBreakPayload(pos, slot));
-                    return InteractionResult.PASS;
+                    return player.isCreative()
+                            ? InteractionResult.SUCCESS
+                            : InteractionResult.PASS;
                 }
         );
     }
