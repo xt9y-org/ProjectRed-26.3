@@ -132,6 +132,9 @@ public final class MultipartBlockEntity extends BlockEntity {
             for (Part part : multipart.parts()) {
                 if (part instanceof WirePart wire) {
                     localChanged |= wire.recompute(multipart);
+                } else if (part instanceof GatePart gate) {
+                    gate.restoreWorldTimeBase(multipart);
+                    localChanged |= gate.tick(multipart);
                 }
             }
 
