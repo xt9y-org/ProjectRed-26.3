@@ -204,6 +204,11 @@ public final class GatePart extends Part {
         return ((bundledInputMask() | bundledOutputMask()) & (1 << (r & 3))) != 0;
     }
 
+    public boolean diminishesRedwireLocal(int r) {
+        r &= 3;
+        return (redwireMask() & (1 << r)) != 0;
+    }
+
     public int outputLocal(int r) {
         r &= 3;
 

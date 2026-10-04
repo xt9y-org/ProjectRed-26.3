@@ -761,9 +761,10 @@ public final class MultipartBlockEntity extends BlockEntity {
                         && Direction.values()[gate.slot()] != expectedAttachment) {
                     continue;
                 }
-                // Gates are redwire emitters, not redwire conductors. Their
-                // output enters the first wire without one-unit diminution.
-                max = Math.max(max, gateRawOutputToward(gate, toward));
+                max = Math.max(
+                        max,
+                        gateRedwireOutputToward(gate, toward)
+                );
             }
         }
         return max;
@@ -1039,7 +1040,10 @@ public final class MultipartBlockEntity extends BlockEntity {
             } else if (p instanceof GatePart gate) {
                 max = Math.max(
                         max,
-                        gateRawOutputToward(gate, direction.getOpposite())
+                        gateRedwireOutputToward(
+                                gate,
+                                direction.getOpposite()
+                        )
                 );
             }
         }
@@ -1068,7 +1072,10 @@ public final class MultipartBlockEntity extends BlockEntity {
                     && wire.spec().family() != WireFamily.BUNDLED) {
                 max = Math.max(max, Math.max(0, wire.signal() - 1));
             } else if (p instanceof GatePart gate) {
-                max = Math.max(max, gateRawOutputToward(gate, toward));
+                max = Math.max(
+                        max,
+                        gateRedwireOutputToward(gate, toward)
+                );
             }
         }
         return max;
@@ -1192,7 +1199,11 @@ public final class MultipartBlockEntity extends BlockEntity {
                 max = Math.max(max, wire.vanillaSignal());
             }
             if (p instanceof GatePart other) {
-                max = Math.max(max, gateOutputToward(other, worldDir.getOpposite()));
+                int raw = gateRedwireOutputToward(
+                        other,
+                        worldDir.getOpposite()
+                );
+                max = Math.max(max, Math.min(15, (raw + 16) / 17));
             }
         }
         if (level != null) {
@@ -1202,6 +1213,26 @@ public final class MultipartBlockEntity extends BlockEntity {
             if (nbe instanceof MultipartBlockEntity mp) max = Math.max(max, mp.vanillaSignal(worldDir.getOpposite()));
         }
         return max;
+    }
+
+    private int gateRedwireOutputToward(
+            GatePart gate,
+            Direction toward
+    ) {
+        Direction attachment = Direction.values()[gate.slot()];
+        if (toward.getAxis() == attachment.getAxis()) return 0;
+
+        for (int r = 0; r < 4; r++) {
+            if (localToWorld(attachment, gate.rotation(), r) != toward) {
+                continue;
+            }
+
+            int raw = gate.outputRawLocal(r);
+            return gate.diminishesRedwireLocal(r)
+                    ? Math.max(0, raw - 1)
+                    : raw;
+        }
+        return 0;
     }
 
     private int gateOutputToward(GatePart gate, Direction toward) {
