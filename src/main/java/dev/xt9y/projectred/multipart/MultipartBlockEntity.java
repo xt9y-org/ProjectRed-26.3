@@ -19,6 +19,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
+import net.minecraft.world.entity.decoration.ItemFrame;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
@@ -26,6 +27,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
@@ -743,6 +745,50 @@ public final class MultipartBlockEntity extends BlockEntity {
                     neighborState.getAnalogOutputSignal(level, neighborPos, direction.getOpposite())
             );
         }
+        return Math.max(0, Math.min(15, result));
+    }
+
+    public int gateComparatorBackInput(GatePart receiver) {
+        Direction direction = localToWorld(
+                Direction.values()[receiver.slot()],
+                receiver.rotation(),
+                2
+        );
+
+        int result = gateAnalogInput(receiver, 2);
+        if (level == null || result >= 15) return result;
+
+        BlockPos firstPos = worldPosition.relative(direction);
+        BlockState firstState = level.getBlockState(firstPos);
+
+        if (!firstState.isRedstoneConductor(level, firstPos)) {
+            return result;
+        }
+
+        BlockPos secondPos = firstPos.relative(direction);
+        BlockState secondState = level.getBlockState(secondPos);
+
+        if (secondState.hasAnalogOutputSignal()) {
+            result = Math.max(
+                    result,
+                    secondState.getAnalogOutputSignal(
+                            level,
+                            secondPos,
+                            direction.getOpposite()
+                    )
+            );
+        }
+
+        AABB box = new AABB(secondPos);
+        List<ItemFrame> frames = level.getEntitiesOfClass(
+                ItemFrame.class,
+                box,
+                frame -> frame.getDirection() == direction
+        );
+        if (frames.size() == 1) {
+            result = Math.max(result, frames.getFirst().getAnalogOutput());
+        }
+
         return Math.max(0, Math.min(15, result));
     }
 
