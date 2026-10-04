@@ -50,7 +50,7 @@ public final class MultipartBlockEntity extends BlockEntity {
             if (part instanceof GatePart gate) changed |= gate.tick(be);
         }
 
-        for (int slot : unsupported) be.remove(slot);
+        for (int slot : unsupported) be.removeAndDrop(slot);
         if (changed) be.syncChanged();
     }
 
@@ -472,6 +472,104 @@ public final class MultipartBlockEntity extends BlockEntity {
         Direction da = Direction.values()[a.slot()];
         Direction db = Direction.values()[b.slot()];
         return da.getAxis() != db.getAxis();
+    }
+
+    public int visualWireConnections(WirePart receiver) {
+        if (level == null) return 0;
+
+        int mask = 0;
+        Direction attachment = receiver.center()
+                ? null
+                : Direction.values()[receiver.slot()];
+
+        for (Direction direction : Direction.values()) {
+            if (attachment != null && direction.getAxis() == attachment.getAxis()) {
+                continue;
+            }
+
+            if (hasStraightWireConnection(receiver, direction, attachment)
+                    || (attachment != null
+                    && hasCornerWireConnection(receiver, direction, attachment))) {
+                mask |= 1 << direction.ordinal();
+            }
+        }
+        return mask;
+    }
+
+    private boolean hasStraightWireConnection(
+            WirePart receiver,
+            Direction direction,
+            Direction expectedAttachment
+    ) {
+        BlockPos neighborPos = worldPosition.relative(direction);
+        BlockEntity neighbor = level.getBlockEntity(neighborPos);
+
+        if (neighbor instanceof MultipartBlockEntity multipart) {
+            for (Part p : multipart.parts()) {
+                if (!partConnectsToward(p, direction.getOpposite())) continue;
+
+                if (p instanceof WirePart other) {
+                    if (!straightAttachmentMatches(other, expectedAttachment)) continue;
+                    if (receiver.canConnect(other)) return true;
+                } else if (p instanceof GatePart gate) {
+                    if (expectedAttachment != null
+                            && Direction.values()[gate.slot()] != expectedAttachment) {
+                        continue;
+                    }
+                    if (gateConnectsToward(
+                            gate,
+                            direction.getOpposite(),
+                            receiver.spec().family() == WireFamily.BUNDLED
+                    )) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        return receiver.spec().family() != WireFamily.BUNDLED
+                && level.getBlockState(neighborPos).isSignalSource();
+    }
+
+    private boolean hasCornerWireConnection(
+            WirePart receiver,
+            Direction direction,
+            Direction attachment
+    ) {
+        BlockPos cornerPos = worldPosition.relative(direction).relative(attachment);
+        BlockEntity corner = level.getBlockEntity(cornerPos);
+        if (!(corner instanceof MultipartBlockEntity multipart)) return false;
+
+        Part p = multipart.part(direction.getOpposite().ordinal());
+        if (p instanceof WirePart other) {
+            return receiver.canConnect(other);
+        }
+        if (p instanceof GatePart gate) {
+            return gateConnectsToward(
+                    gate,
+                    attachment.getOpposite(),
+                    receiver.spec().family() == WireFamily.BUNDLED
+            );
+        }
+        return false;
+    }
+
+    private static boolean gateConnectsToward(
+            GatePart gate,
+            Direction toward,
+            boolean bundled
+    ) {
+        Direction attachment = Direction.values()[gate.slot()];
+        if (toward.getAxis() == attachment.getAxis()) return false;
+
+        for (int local = 0; local < 4; local++) {
+            if (localToWorld(attachment, gate.rotation(), local) != toward) continue;
+            return bundled
+                    ? gate.canConnectBundledLocal(local)
+                    : gate.canConnectLocal(local);
+        }
+        return false;
     }
 
     public int gateRedwireRawInput(GatePart receiver, int local) {
