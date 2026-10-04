@@ -177,7 +177,7 @@ public final class MultipartBlockEntity extends BlockEntity {
                     max = Math.max(max, wire.signal());
                 }
             } else if (p instanceof GatePart gate) {
-                max = Math.max(max, gateOutputToward(gate, toward) * 17);
+                max = Math.max(max, gateRawOutputToward(gate, toward));
             }
         }
         return attenuate ? Math.max(0, max - 1) : max;
@@ -194,6 +194,92 @@ public final class MultipartBlockEntity extends BlockEntity {
                     one[wire.spec().color()] = wire.signal();
                     out = BundledSignals.raise(out, one, false);
                 }
+            } else if (p instanceof GatePart gate) {
+                out = BundledSignals.raise(out, gateBundledOutputToward(gate, toward), false);
+            }
+        }
+        return out;
+    }
+
+    public int gateRedwireRawInput(GatePart receiver, int local) {
+        Direction direction = localToWorld(
+                Direction.values()[receiver.slot()],
+                receiver.rotation(),
+                local
+        );
+        int max = 0;
+
+        for (Part p : parts()) {
+            if (p == receiver) continue;
+            if (p instanceof WirePart wire && wire.spec().family() != WireFamily.BUNDLED) {
+                max = Math.max(max, wire.signal());
+            } else if (p instanceof GatePart gate) {
+                max = Math.max(max, gateRawOutputToward(gate, direction.getOpposite()));
+            }
+        }
+
+        if (level == null) return max;
+
+        BlockPos neighborPos = worldPosition.relative(direction);
+        BlockEntity neighbor = level.getBlockEntity(neighborPos);
+        if (neighbor instanceof MultipartBlockEntity multipart) {
+            max = Math.max(max, multipart.rawSignal(direction.getOpposite()));
+        } else {
+            max = Math.max(max, level.getSignal(neighborPos, direction) * 17);
+        }
+        return max;
+    }
+
+    public int gateAnalogInput(GatePart receiver, int local) {
+        Direction direction = localToWorld(
+                Direction.values()[receiver.slot()],
+                receiver.rotation(),
+                local
+        );
+        int result = Math.min(15, (gateRedwireRawInput(receiver, local) + 16) / 17);
+
+        if (level == null) return result;
+
+        BlockPos neighborPos = worldPosition.relative(direction);
+        BlockState neighborState = level.getBlockState(neighborPos);
+        if (neighborState.hasAnalogOutputSignal()) {
+            result = Math.max(
+                    result,
+                    neighborState.getAnalogOutputSignal(level, neighborPos)
+            );
+        }
+        return Math.max(0, Math.min(15, result));
+    }
+
+    public int[] gateBundledInput(GatePart receiver, int local) {
+        Direction direction = localToWorld(
+                Direction.values()[receiver.slot()],
+                receiver.rotation(),
+                local
+        );
+        int[] out = new int[16];
+
+        for (Part p : parts()) {
+            if (p == receiver) continue;
+            if (p instanceof WirePart wire) {
+                out = BundledSignals.raise(out, wire.bundledSignal(), false);
+            } else if (p instanceof GatePart gate) {
+                out = BundledSignals.raise(
+                        out,
+                        gateBundledOutputToward(gate, direction.getOpposite()),
+                        false
+                );
+            }
+        }
+
+        if (level != null) {
+            BlockEntity neighbor = level.getBlockEntity(worldPosition.relative(direction));
+            if (neighbor instanceof MultipartBlockEntity multipart) {
+                out = BundledSignals.raise(
+                        out,
+                        multipart.bundledSignal(direction.getOpposite()),
+                        false
+                );
             }
         }
         return out;
@@ -227,10 +313,53 @@ public final class MultipartBlockEntity extends BlockEntity {
     }
 
     private int gateOutputToward(GatePart gate, Direction toward) {
+        return Math.min(15, (gateRawOutputToward(gate, toward) + 16) / 17);
+    }
+
+    private int gateRawOutputToward(GatePart gate, Direction toward) {
         Direction attachment = Direction.values()[gate.slot()];
         if (toward.getAxis() == attachment.getAxis()) return 0;
-        for (int r=0;r<4;r++) if (localToWorld(attachment, gate.rotation(), r) == toward) return gate.outputLocal(r);
+        for (int r = 0; r < 4; r++) {
+            if (localToWorld(attachment, gate.rotation(), r) == toward) {
+                return gate.outputRawLocal(r);
+            }
+        }
         return 0;
+    }
+
+    private int[] gateBundledOutputToward(GatePart gate, Direction toward) {
+        Direction attachment = Direction.values()[gate.slot()];
+        if (toward.getAxis() == attachment.getAxis()) return null;
+        for (int r = 0; r < 4; r++) {
+            if (localToWorld(attachment, gate.rotation(), r) == toward) {
+                return gate.bundledOutputLocal(r);
+            }
+        }
+        return null;
+    }
+
+    public int rawSignal(Direction toward) {
+        int max = 0;
+        for (Part p : parts()) {
+            if (p instanceof WirePart wire && wire.spec().family() != WireFamily.BUNDLED) {
+                max = Math.max(max, wire.signal());
+            } else if (p instanceof GatePart gate) {
+                max = Math.max(max, gateRawOutputToward(gate, toward));
+            }
+        }
+        return max;
+    }
+
+    public int[] bundledSignal(Direction toward) {
+        int[] out = new int[16];
+        for (Part p : parts()) {
+            if (p instanceof WirePart wire) {
+                out = BundledSignals.raise(out, wire.bundledSignal(), false);
+            } else if (p instanceof GatePart gate) {
+                out = BundledSignals.raise(out, gateBundledOutputToward(gate, toward), false);
+            }
+        }
+        return out;
     }
 
     public int vanillaSignal(Direction toward) {
