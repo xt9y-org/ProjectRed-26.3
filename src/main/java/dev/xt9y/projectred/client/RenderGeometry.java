@@ -2,6 +2,7 @@ package dev.xt9y.projectred.client;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import dev.xt9y.projectred.multipart.MultipartBlockEntity;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.Direction;
 
@@ -205,6 +206,167 @@ final class RenderGeometry {
                 case EAST -> box(c,pose,light,.625F,.4375F-e,.4375F-e,1,.5625F+e,.5625F+e);
             }
         }
+    }
+
+    static void panelButtons(
+            VertexConsumer c,
+            PoseStack.Pose pose,
+            int light,
+            Direction attachment,
+            int rotation,
+            int mask
+    ) {
+        for (int bit = 0; bit < 16; bit++) {
+            if ((mask & (1 << bit)) == 0) continue;
+
+            int row = bit / 4;
+            int col = bit % 4;
+            float u0 = .17F + col * .165F;
+            float v0 = .17F + row * .165F;
+            float u1 = u0 + .12F;
+            float v1 = v0 + .12F;
+
+            surfaceRect(
+                    c, pose, light,
+                    attachment, rotation,
+                    u0, v0, u1, v1,
+                    .142F
+            );
+        }
+    }
+
+    static void segmentDisplay(
+            VertexConsumer c,
+            PoseStack.Pose pose,
+            int light,
+            Direction attachment,
+            int rotation,
+            int shape,
+            int mask
+    ) {
+        if (shape == 0) {
+            drawSevenSegment(
+                    c, pose, light,
+                    attachment, rotation,
+                    .18F, .18F, .46F, .82F,
+                    mask & 0xFF
+            );
+            drawSevenSegment(
+                    c, pose, light,
+                    attachment, rotation,
+                    .54F, .18F, .82F, .82F,
+                    (mask >>> 8) & 0xFF
+            );
+            return;
+        }
+
+        // ProjectRed's 16-segment mode maps the 16 bundled channels
+        // directly to the 16 display elements. This compact grid keeps that
+        // one-bit-per-element behavior visible without CBMultipart's model
+        // dependency.
+        for (int bit = 0; bit < 16; bit++) {
+            if ((mask & (1 << bit)) == 0) continue;
+            int row = bit / 4;
+            int col = bit % 4;
+            float u0 = .19F + col * .155F;
+            float v0 = .19F + row * .155F;
+            surfaceRect(
+                    c, pose, light,
+                    attachment, rotation,
+                    u0, v0, u0 + .11F, v0 + .11F,
+                    .145F
+            );
+        }
+    }
+
+    private static void drawSevenSegment(
+            VertexConsumer c,
+            PoseStack.Pose pose,
+            int light,
+            Direction attachment,
+            int rotation,
+            float u0,
+            float v0,
+            float u1,
+            float v1,
+            int bits
+    ) {
+        float w = u1 - u0;
+        float h = v1 - v0;
+        float t = Math.min(w, h) * .13F;
+        float mid = (v0 + v1) * .5F;
+
+        // 0 top, 1 upper-right, 2 lower-right, 3 bottom,
+        // 4 lower-left, 5 upper-left, 6 middle, 7 decimal point.
+        if ((bits & 0x01) != 0) surfaceRect(c,pose,light,attachment,rotation,u0+t,v0,u1-t,v0+t,.145F);
+        if ((bits & 0x02) != 0) surfaceRect(c,pose,light,attachment,rotation,u1-t,v0+t,u1,mid-t*.5F,.145F);
+        if ((bits & 0x04) != 0) surfaceRect(c,pose,light,attachment,rotation,u1-t,mid+t*.5F,u1,v1-t,.145F);
+        if ((bits & 0x08) != 0) surfaceRect(c,pose,light,attachment,rotation,u0+t,v1-t,u1-t,v1,.145F);
+        if ((bits & 0x10) != 0) surfaceRect(c,pose,light,attachment,rotation,u0,mid+t*.5F,u0+t,v1-t,.145F);
+        if ((bits & 0x20) != 0) surfaceRect(c,pose,light,attachment,rotation,u0,v0+t,u0+t,mid-t*.5F,.145F);
+        if ((bits & 0x40) != 0) surfaceRect(c,pose,light,attachment,rotation,u0+t,mid-t*.5F,u1-t,mid+t*.5F,.145F);
+        if ((bits & 0x80) != 0) surfaceRect(c,pose,light,attachment,rotation,u1-t*1.2F,v1-t*1.2F,u1,v1,.145F);
+    }
+
+    private static void surfaceRect(
+            VertexConsumer c,
+            PoseStack.Pose pose,
+            int light,
+            Direction attachment,
+            int rotation,
+            float u0,
+            float v0,
+            float u1,
+            float v1,
+            float depth
+    ) {
+        Direction right = MultipartBlockEntity.localToWorld(
+                attachment,
+                rotation,
+                1
+        );
+        Direction down = MultipartBlockEntity.localToWorld(
+                attachment,
+                rotation,
+                2
+        );
+
+        float cx = .5F + attachment.getStepX() * (.5F - depth);
+        float cy = .5F + attachment.getStepY() * (.5F - depth);
+        float cz = .5F + attachment.getStepZ() * (.5F - depth);
+
+        float[] a = point(cx,cy,cz,right,down,u0,v0);
+        float[] b = point(cx,cy,cz,right,down,u1,v0);
+        float[] d = point(cx,cy,cz,right,down,u0,v1);
+        float[] e = point(cx,cy,cz,right,down,u1,v1);
+
+        orientedQuad(
+                c, pose, light,
+                attachment.getOpposite(),
+                0,
+                a[0],a[1],a[2],
+                b[0],b[1],b[2],
+                e[0],e[1],e[2],
+                d[0],d[1],d[2]
+        );
+    }
+
+    private static float[] point(
+            float cx,
+            float cy,
+            float cz,
+            Direction right,
+            Direction down,
+            float u,
+            float v
+    ) {
+        float du = u - .5F;
+        float dv = v - .5F;
+        return new float[] {
+                cx + right.getStepX() * du + down.getStepX() * dv,
+                cy + right.getStepY() * du + down.getStepY() * dv,
+                cz + right.getStepZ() * du + down.getStepZ() * dv
+        };
     }
 
     private static void orientedQuad(
