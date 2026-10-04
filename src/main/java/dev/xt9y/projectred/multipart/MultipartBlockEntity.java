@@ -1256,7 +1256,23 @@ public final class MultipartBlockEntity extends BlockEntity {
                     )
             );
         } else {
-            max = Math.max(max, level.getSignal(neighborPos, direction) * 17);
+            BlockState neighborState = level.getBlockState(neighborPos);
+            if (neighborState.is(Blocks.REDSTONE_WIRE)) {
+                // Matches ArrayGatePart's
+                // RedstoneFaceLookup.resolveVanillaSignal(..., limitDust=true).
+                max = Math.max(
+                        max,
+                        Math.max(
+                                neighborState.getValue(RedstoneWireBlock.POWER) - 1,
+                                0
+                        )
+                );
+            } else {
+                max = Math.max(
+                        max,
+                        level.getSignal(neighborPos, direction) * 17
+                );
+            }
         }
         return max;
     }
