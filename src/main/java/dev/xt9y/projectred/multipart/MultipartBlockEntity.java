@@ -574,11 +574,22 @@ public final class MultipartBlockEntity extends BlockEntity {
         BlockEntity neighbor = level.getBlockEntity(neighborPos);
 
         if (neighbor instanceof MultipartBlockEntity multipart) {
-            return multipart.redwireToward(
+            int projectRedSignal = multipart.redwireToward(
                     direction.getOpposite(),
                     receiver.spec(),
                     expectedAttachment
             );
+            if (projectRedSignal > 0) {
+                return projectRedSignal;
+            }
+
+            // A center wire may still see an adjacent multipart's ordinary
+            // redstone output (for example a gate) through the vanilla
+            // interaction path, just like RedstoneCenterLookup upstream.
+            if (receiver.center()) {
+                return level.getSignal(neighborPos, direction) * 17;
+            }
+            return 0;
         }
 
         BlockState neighborState = level.getBlockState(neighborPos);
@@ -700,6 +711,14 @@ public final class MultipartBlockEntity extends BlockEntity {
             WireSpec receiver,
             Direction expectedAttachment
     ) {
+        if (expectedAttachment == null) {
+            if (!(center instanceof WirePart wire)
+                    || !receiver.redwireCompatible(wire.spec())) {
+                return 0;
+            }
+            return Math.max(0, wire.signal() - 1);
+        }
+
         int max = 0;
         for (Part p : parts()) {
             if (!partConnectsToward(p, toward)) continue;
@@ -749,6 +768,24 @@ public final class MultipartBlockEntity extends BlockEntity {
             WireSpec receiver,
             Direction expectedAttachment
     ) {
+        if (expectedAttachment == null) {
+            if (!(center instanceof WirePart wire)) {
+                return null;
+            }
+
+            if (wire.spec().family() == WireFamily.BUNDLED
+                    && receiver.bundledCompatible(wire.spec())) {
+                return wire.bundled();
+            }
+
+            if (wire.spec().family() == WireFamily.INSULATED) {
+                int[] one = new int[16];
+                one[wire.spec().color()] = wire.signal();
+                return one;
+            }
+            return null;
+        }
+
         int[] out = new int[16];
         for (Part p : parts()) {
             if (!partConnectsToward(p, toward)) continue;
@@ -897,6 +934,12 @@ public final class MultipartBlockEntity extends BlockEntity {
         BlockEntity neighbor = level.getBlockEntity(neighborPos);
 
         if (neighbor instanceof MultipartBlockEntity multipart) {
+            if (expectedAttachment == null) {
+                Part centerPart = multipart.part(Part.CENTER_SLOT);
+                return centerPart instanceof WirePart other
+                        && receiver.canConnect(other);
+            }
+
             for (Part p : multipart.parts()) {
                 if (!partConnectsToward(p, direction.getOpposite())) continue;
 
