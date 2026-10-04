@@ -620,18 +620,13 @@ public final class MultipartBlockEntity extends BlockEntity {
                 } else {
                     max = Math.max(max, Math.max(0, other.signal() - 1));
                 }
-            } else if (p instanceof GatePart gate) {
-                if (receiver.center()) {
-                    for (int local = 0; local < 4; local++) {
-                        max = Math.max(max, gate.outputRawLocal(local));
-                    }
-                } else {
-                    Direction toward = Direction.values()[receiver.slot()];
-                    max = Math.max(
-                            max,
-                            gateRedwireOutputToward(gate, toward)
-                    );
-                }
+            } else if (p instanceof GatePart gate
+                    && !receiver.center()) {
+                Direction toward = Direction.values()[receiver.slot()];
+                max = Math.max(
+                        max,
+                        gateRedwireOutputToward(gate, toward)
+                );
             }
         }
         return max;
