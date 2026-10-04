@@ -1225,81 +1225,158 @@ public final class MultipartBlockEntity extends BlockEntity {
     }
 
     public int gateRedwireRawInput(GatePart receiver, int local) {
+        if (!receiver.diminishesRedwireLocal(local)) {
+            return 0;
+        }
+
+        Direction attachment = Direction.values()[receiver.slot()];
         Direction direction = localToWorld(
-                Direction.values()[receiver.slot()],
+                attachment,
                 receiver.rotation(),
                 local
         );
-        int max = 0;
 
-        for (Part p : parts()) {
-            if (p == receiver) continue;
-
-            if (p instanceof WirePart wire
-                    && wire.spec().family() != WireFamily.BUNDLED
-                    && internalWireMeetsDirection(wire, direction)) {
-                max = Math.max(max, Math.max(0, wire.signal() - 1));
-            }
+        // ArrayGatePart::calculateSignal() gives the internal multipart edge
+        // highest priority, then straight, then corner, then vanilla.
+        Integer inside = insideArrayRedwireRaw(
+                receiver,
+                attachment,
+                direction
+        );
+        if (inside != null) {
+            return inside;
         }
 
-        if (level == null) return max;
+        if (level == null) return 0;
 
-        Direction expectedAttachment = Direction.values()[receiver.slot()];
-        BlockPos neighborPos = worldPosition.relative(direction);
-        BlockEntity neighbor = level.getBlockEntity(neighborPos);
-        if (neighbor instanceof MultipartBlockEntity multipart) {
-            max = Math.max(
-                    max,
-                    multipart.arrayRedwireToward(
-                            direction.getOpposite(),
-                            expectedAttachment
-                    )
+        Integer straight = straightArrayRedwireRaw(
+                receiver,
+                attachment,
+                direction
+        );
+        if (straight != null) {
+            return straight;
+        }
+
+        if (outsideCornerEdgeOpen(direction, attachment)) {
+            Integer corner = cornerArrayRedwireRaw(
+                    receiver,
+                    attachment,
+                    direction
             );
-        } else {
-            BlockState neighborState = level.getBlockState(neighborPos);
-            if (neighborState.is(Blocks.REDSTONE_WIRE)) {
-                // Matches ArrayGatePart's
-                // RedstoneFaceLookup.resolveVanillaSignal(..., limitDust=true).
-                max = Math.max(
-                        max,
-                        Math.max(
-                                neighborState.getValue(RedstoneWireBlock.POWER) - 1,
-                                0
-                        )
-                );
-            } else {
-                max = Math.max(
-                        max,
-                        level.getSignal(neighborPos, direction) * 17
-                );
+            if (corner != null) {
+                return corner;
             }
         }
-        return max;
+
+        BlockPos neighborPos = worldPosition.relative(direction);
+        BlockState neighborState = level.getBlockState(neighborPos);
+
+        if (neighborState.is(Blocks.REDSTONE_WIRE)) {
+            // RedstoneFaceLookup.resolveVanillaSignal(..., limitDust=true)
+            // intentionally returns dust POWER - 1 without scaling by 17.
+            return Math.max(
+                    neighborState.getValue(RedstoneWireBlock.POWER) - 1,
+                    0
+            );
+        }
+
+        return level.getSignal(neighborPos, direction) * 17;
     }
 
-    private int arrayRedwireToward(
-            Direction toward,
-            Direction expectedAttachment
+    private Integer insideArrayRedwireRaw(
+            GatePart receiver,
+            Direction receiverAttachment,
+            Direction direction
     ) {
-        int max = 0;
-        for (Part p : parts()) {
-            if (p.center()
-                    || Direction.values()[p.slot()] != expectedAttachment
-                    || !partConnectsToward(p, toward)) {
-                continue;
-            }
+        Part inside = face[direction.ordinal()];
 
-            if (p instanceof WirePart wire
-                    && wire.spec().family() != WireFamily.BUNDLED) {
-                max = Math.max(max, Math.max(0, wire.signal() - 1));
-            } else if (p instanceof GatePart gate) {
-                max = Math.max(
-                        max,
-                        gateRedwireOutputToward(gate, toward)
-                );
-            }
+        if (inside instanceof WirePart wire
+                && wire.spec().family() != WireFamily.BUNDLED) {
+            return Math.max(0, wire.signal() - 1);
         }
-        return max;
+
+        if (inside instanceof GatePart gate
+                && gate.isArrayCell()
+                && gateConnectsToward(
+                        gate,
+                        receiverAttachment,
+                        false
+                )) {
+            return gateRedwireOutputToward(
+                    gate,
+                    receiverAttachment
+            );
+        }
+
+        return null;
+    }
+
+    private Integer straightArrayRedwireRaw(
+            GatePart receiver,
+            Direction attachment,
+            Direction direction
+    ) {
+        BlockEntity neighbor = level.getBlockEntity(
+                worldPosition.relative(direction)
+        );
+        if (!(neighbor instanceof MultipartBlockEntity multipart)) {
+            return null;
+        }
+
+        Part part = multipart.part(attachment.ordinal());
+
+        if (part instanceof WirePart wire
+                && wire.spec().family() != WireFamily.BUNDLED
+                && partConnectsToward(wire, direction.getOpposite())
+                && multipart.faceWireExternalOpen(
+                        wire,
+                        direction.getOpposite()
+                )) {
+            return Math.max(0, wire.signal() - 1);
+        }
+
+        if (part instanceof GatePart gate
+                && gate.isArrayCell()
+                && gateConnectsToward(
+                        gate,
+                        direction.getOpposite(),
+                        false
+                )) {
+            return gateRedwireOutputToward(
+                    gate,
+                    direction.getOpposite()
+            );
+        }
+
+        return null;
+    }
+
+    private Integer cornerArrayRedwireRaw(
+            GatePart receiver,
+            Direction attachment,
+            Direction direction
+    ) {
+        BlockPos cornerPos = worldPosition
+                .relative(direction)
+                .relative(attachment);
+        BlockEntity corner = level.getBlockEntity(cornerPos);
+        if (!(corner instanceof MultipartBlockEntity multipart)) {
+            return null;
+        }
+
+        Part part = multipart.part(direction.getOpposite().ordinal());
+        if (!(part instanceof WirePart wire)
+                || wire.spec().family() == WireFamily.BUNDLED) {
+            return null;
+        }
+
+        Direction farEdge = attachment.getOpposite();
+        if (!multipart.faceWireExternalOpen(wire, farEdge)) {
+            return null;
+        }
+
+        return Math.max(0, wire.signal() - 1);
     }
 
     public int gateAnalogInput(GatePart receiver, int local) {
