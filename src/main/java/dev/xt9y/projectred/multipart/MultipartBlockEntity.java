@@ -6,9 +6,12 @@ import dev.xt9y.projectred.integration.GatePart;
 import dev.xt9y.projectred.transmission.WireFamily;
 import dev.xt9y.projectred.transmission.WirePart;
 import dev.xt9y.projectred.transmission.WireSpec;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
@@ -51,7 +54,79 @@ public final class MultipartBlockEntity extends BlockEntity {
         }
 
         for (int slot : unsupported) be.removeAndDrop(slot);
-        if (changed) be.syncChanged();
+        if (changed) {
+            be.syncChanged();
+            be.propagateConnectedSignals();
+        }
+    }
+
+    private void propagateConnectedSignals() {
+        if (level == null || level.isClientSide()) return;
+
+        ArrayDeque<BlockPos> queue = new ArrayDeque<>();
+        Set<Long> queued = new HashSet<>();
+
+        enqueuePropagationNeighborhood(queue, queued, worldPosition);
+
+        int operations = 0;
+        final int maxOperations = 65_536;
+
+        while (!queue.isEmpty() && operations++ < maxOperations) {
+            BlockPos pos = queue.removeFirst();
+            queued.remove(pos.asLong());
+
+            BlockEntity blockEntity = level.getBlockEntity(pos);
+            if (!(blockEntity instanceof MultipartBlockEntity multipart)) {
+                continue;
+            }
+
+            boolean localChanged = false;
+            for (Part part : multipart.parts()) {
+                if (part instanceof WirePart wire) {
+                    localChanged |= wire.recompute(multipart);
+                }
+            }
+
+            if (!localChanged) continue;
+
+            multipart.syncChanged();
+            enqueuePropagationNeighborhood(queue, queued, pos);
+        }
+
+        if (operations >= maxOperations) {
+            dev.xt9y.projectred.ProjectRed263.LOGGER.warn(
+                    "ProjectRed signal propagation reached operation cap near {}",
+                    worldPosition
+            );
+        }
+    }
+
+    private static void enqueuePropagationNeighborhood(
+            ArrayDeque<BlockPos> queue,
+            Set<Long> queued,
+            BlockPos center
+    ) {
+        // Straight connections plus ProjectRed outer-corner wrapping all fit
+        // inside the surrounding 3x3x3 cube. Queueing that compact
+        // neighborhood keeps the algorithm topology-independent while the
+        // actual wire recomputation still enforces connection rules.
+        for (int dx = -1; dx <= 1; dx++) {
+            for (int dy = -1; dy <= 1; dy++) {
+                for (int dz = -1; dz <= 1; dz++) {
+                    if (dx == 0 && dy == 0 && dz == 0) continue;
+                    if (Math.abs(dx) + Math.abs(dy) + Math.abs(dz) > 2) continue;
+
+                    BlockPos pos = center.offset(dx, dy, dz);
+                    if (queued.add(pos.asLong())) {
+                        queue.addLast(pos);
+                    }
+                }
+            }
+        }
+
+        if (queued.add(center.asLong())) {
+            queue.addLast(center);
+        }
     }
 
     public List<Part> parts() {
