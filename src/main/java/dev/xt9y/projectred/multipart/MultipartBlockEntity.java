@@ -63,9 +63,9 @@ public final class MultipartBlockEntity extends BlockEntity {
                 continue;
             }
 
-            // ProjectRed wires are event-driven. Only gates need a regular
-            // tick for timers, sensors and scheduled output transitions.
-            if (part instanceof GatePart gate) {
+            // Wires are event-driven, and idle logic gates are too.
+            // Tick only timers/sensors or gates with pending delayed work.
+            if (part instanceof GatePart gate && gate.needsServerTick()) {
                 gate.restoreWorldTimeBase(be);
                 changed |= gate.tick(be);
             }
