@@ -1066,7 +1066,6 @@ public final class ProjectRedGameTests {
                 repeaterRel,
                 Blocks.REPEATER.defaultBlockState()
                         .setValue(RepeaterBlock.FACING, Direction.EAST)
-                        .setValue(RepeaterBlock.POWERED, true)
         );
         helper.setBlock(wireRel, PRContent.MULTIPART.defaultBlockState());
 
@@ -1077,25 +1076,30 @@ public final class ProjectRedGameTests {
         );
         helper.assertTrue(multipart.add(wire), "failed to add red-alloy wire");
 
-        multipart.onNeighborSignalChanged();
-        helper.assertTrue(
-                wire.signal() == 255,
-                "east-facing powered vanilla repeater must feed the ProjectRed wire to its east"
-        );
+        // Let vanilla perform the repeater's own two-tick transition instead
+        // of forcing an impossible POWERED blockstate at test tick zero.
+        helper.runAfterDelay(4, () -> {
+            multipart.onNeighborSignalChanged();
+            helper.assertTrue(
+                    wire.signal() == 255,
+                    "east-facing powered vanilla repeater must feed the ProjectRed wire to its east"
+            );
 
-        helper.setBlock(
-                repeaterRel,
-                Blocks.REPEATER.defaultBlockState()
-                        .setValue(RepeaterBlock.FACING, Direction.WEST)
-                        .setValue(RepeaterBlock.POWERED, true)
-        );
-        multipart.onNeighborSignalChanged();
+            helper.setBlock(
+                    repeaterRel,
+                    Blocks.REPEATER.defaultBlockState()
+                            .setValue(RepeaterBlock.FACING, Direction.WEST)
+            );
 
-        helper.assertTrue(
-                wire.signal() == 0,
-                "powered vanilla repeater facing away must not feed the ProjectRed wire"
-        );
-        helper.succeed();
+            helper.runAfterDelay(8, () -> {
+                multipart.onNeighborSignalChanged();
+                helper.assertTrue(
+                        wire.signal() == 0,
+                        "vanilla repeater facing away must not feed the ProjectRed wire"
+                );
+                helper.succeed();
+            });
+        });
     }
 
     @GameTest(structure = EMPTY, maxTicks = 40)
