@@ -174,6 +174,98 @@ public final class ProjectRedGameTests {
         });
     }
 
+
+    @GameTest(structure = EMPTY, maxTicks = 40)
+    public void busInputPanelDrivesSelectedBundledChannel(GameTestHelper helper) {
+        BlockPos gateRel = new BlockPos(3, 2, 3);
+        BlockPos cableRel = gateRel.south();
+
+        helper.setBlock(gateRel.below(), Blocks.STONE.defaultBlockState());
+        helper.setBlock(cableRel.below(), Blocks.STONE.defaultBlockState());
+        helper.setBlock(gateRel, PRContent.MULTIPART.defaultBlockState());
+        helper.setBlock(cableRel, PRContent.MULTIPART.defaultBlockState());
+
+        MultipartBlockEntity gateMultipart = multipart(helper, gateRel);
+        MultipartBlockEntity cableMultipart = multipart(helper, cableRel);
+
+        GatePart panel = new GatePart(
+                GateType.BUS_INPUT_PANEL,
+                Direction.DOWN.ordinal(),
+                0
+        );
+        WirePart cable = new WirePart(
+                requireWire("neutral_bundled_wire"),
+                Direction.DOWN.ordinal()
+        );
+
+        helper.assertTrue(gateMultipart.add(panel), "failed to add bus input panel");
+        helper.assertTrue(cableMultipart.add(cable), "failed to add bundled cable");
+
+        panel.togglePanelBit(5);
+        gateMultipart.markPartChanged();
+
+        helper.runAfterDelay(3, () -> {
+            int[] signal = cable.bundled();
+            helper.assertTrue(
+                    signal[5] == 255,
+                    "pressed bus-input-panel channel must drive bundled cable at full strength"
+            );
+            for (int channel = 0; channel < signal.length; channel++) {
+                if (channel == 5) continue;
+                helper.assertTrue(
+                        signal[channel] == 0,
+                        "unpressed bus-input-panel channels must remain off"
+                );
+            }
+            helper.succeed();
+        });
+    }
+
+    @GameTest(structure = EMPTY, maxTicks = 40)
+    public void busConverterMapsAnalogLevelToBundledChannel(GameTestHelper helper) {
+        BlockPos gateRel = new BlockPos(3, 2, 3);
+        BlockPos inputRel = gateRel.south();
+        BlockPos cableRel = gateRel.north();
+
+        helper.setBlock(gateRel.below(), Blocks.STONE.defaultBlockState());
+        helper.setBlock(cableRel.below(), Blocks.STONE.defaultBlockState());
+        helper.setBlock(inputRel, Blocks.REDSTONE_BLOCK.defaultBlockState());
+        helper.setBlock(gateRel, PRContent.MULTIPART.defaultBlockState());
+        helper.setBlock(cableRel, PRContent.MULTIPART.defaultBlockState());
+
+        MultipartBlockEntity gateMultipart = multipart(helper, gateRel);
+        MultipartBlockEntity cableMultipart = multipart(helper, cableRel);
+
+        GatePart converter = new GatePart(
+                GateType.BUS_CONVERTER,
+                Direction.DOWN.ordinal(),
+                0
+        );
+        WirePart cable = new WirePart(
+                requireWire("neutral_bundled_wire"),
+                Direction.DOWN.ordinal()
+        );
+
+        helper.assertTrue(gateMultipart.add(converter), "failed to add bus converter");
+        helper.assertTrue(cableMultipart.add(cable), "failed to add bundled cable");
+        gateMultipart.onNeighborSignalChanged();
+
+        helper.runAfterDelay(3, () -> {
+            int[] signal = cable.bundled();
+            helper.assertTrue(
+                    signal[15] == 255,
+                    "analog redstone level 15 must map to bundled channel 15"
+            );
+            for (int channel = 0; channel < 15; channel++) {
+                helper.assertTrue(
+                        signal[channel] == 0,
+                        "bus converter must emit exactly one bundled channel in analog-to-bus mode"
+                );
+            }
+            helper.succeed();
+        });
+    }
+
     private static Rig line(
             GameTestHelper helper,
             String firstId,
