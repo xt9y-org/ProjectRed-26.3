@@ -209,11 +209,15 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
                                 part.connections
                         );
                     } else {
+                        // Legacy RenderWire uses tw=(thickness+1)
+                        // pixels as half-width: red alloy=1, insulated=2,
+                        // bundled=3. Full widths are therefore 2/16, 4/16,
+                        // and 6/16 blocks.
                         float width = part.family == WireFamily.BUNDLED
-                                ? .50F
+                                ? .375F
                                 : part.family == WireFamily.INSULATED
-                                        ? .375F
-                                        : .25F;
+                                        ? .25F
+                                        : .125F;
                         float depth = part.family == WireFamily.BUNDLED
                                 ? .25F
                                 : part.family == WireFamily.INSULATED
