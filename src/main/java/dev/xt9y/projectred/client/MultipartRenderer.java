@@ -157,13 +157,18 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
                                         : part.family == WireFamily.INSULATED
                                                 ? .375F
                                                 : .25F;
+                                float depth = part.family == WireFamily.BUNDLED
+                                        ? .25F
+                                        : part.family == WireFamily.INSULATED
+                                                ? .1875F
+                                                : .125F;
                                 RenderGeometry.wireFace(
                                         consumer,
                                         pose,
                                         state.lightCoords,
                                         Direction.values()[part.slot],
                                         width,
-                                        .0625F,
+                                        depth,
                                         part.connections
                                 );
                             }
