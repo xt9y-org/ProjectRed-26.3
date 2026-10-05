@@ -394,14 +394,25 @@ final class RenderGeometry {
             int heightPixels,
             boolean reflect
     ) {
+        float height = Math.max(.125F, (heightPixels - 1) / 16.0F);
+        float cx = x / 16.0F;
+        float cz = z / 16.0F;
+
+        // ProjectRed's torch model is a crossed stem rather than a square
+        // post. Two thin prisms reproduce the original silhouette while
+        // retaining the original torch texture.
         gateComponentBox(
                 c, pose, light, attachment, rotation,
-                x / 16.0F,
-                z / 16.0F,
-                .125F,
-                .125F,
-                .125F,
-                Math.max(.125F, (heightPixels - 1) / 16.0F),
+                cx, cz,
+                .25F, .125F,
+                .125F, height,
+                reflect
+        );
+        gateComponentBox(
+                c, pose, light, attachment, rotation,
+                cx, cz,
+                .125F, .25F,
+                .125F, height,
                 reflect
         );
     }
