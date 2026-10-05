@@ -107,8 +107,8 @@ public final class TimerConfigScreen extends Screen {
                 0.0F,
                 GUI_WIDTH,
                 GUI_HEIGHT,
-                GUI_WIDTH,
-                GUI_HEIGHT
+                256,
+                256
         );
 
         graphics.centeredText(
