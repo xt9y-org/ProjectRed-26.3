@@ -544,24 +544,15 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
             case SEGMENT_DISPLAY -> {
                 mesh(state,poseStack,collector,order,p,attachment,
                         "array/segbus",.5F,0,.5F,1,0,SEGMENT_BASE,reflect);
-                component(state,poseStack,collector,order,p,attachment,8,8,.72F,.72F,.06F,SEGMENT_BASE,reflect);
-                if (p.bundledMask != 0) {
-                    collector.order(order[0]++).submitCustomGeometry(
-                            poseStack,
-                            RenderTypes.entityCutout(SEGMENT_DIGIT),
-                            (pose, consumer) -> RenderGeometry.segmentDisplay(
-                                    consumer,
-                                    pose,
-                                    0x00F000F0,
-                                    attachment,
-                                    p.gateRotation,
-                                    p.gateShape,
-                                    p.bundledMask,
-                                    DyeColor.byId(p.gateState & 15)
-                                            .getTextureDiffuseColor()
-                            )
-                    );
-                }
+                segmentDisplay(
+                        state,
+                        poseStack,
+                        collector,
+                        order,
+                        p,
+                        attachment,
+                        reflect
+                );
             }
             case DEC_RANDOMIZER -> {
                 int high = p.gateState >> 4;
@@ -611,6 +602,127 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
                     reflect
             );
         }
+    }
+
+    private static void segmentDisplay(
+            State state,
+            PoseStack poseStack,
+            SubmitNodeCollector collector,
+            int[] order,
+            Visual p,
+            Direction attachment,
+            boolean reflect
+    ) {
+        int onColor = DyeColor.byId(p.gateState & 15)
+                .getTextureDiffuseColor() & 0xFFFFFF;
+        int offColor = 0x000000;
+
+        if (p.gateShape == 0) {
+            sevenSegment(
+                    state, poseStack, collector, order, p, attachment,
+                    11.5F / 16.0F, 8.0F / 16.0F,
+                    p.bundledMask & 0xFF,
+                    onColor, offColor, reflect
+            );
+            sevenSegment(
+                    state, poseStack, collector, order, p, attachment,
+                    4.5F / 16.0F, 8.0F / 16.0F,
+                    p.bundledMask >>> 8 & 0xFF,
+                    onColor, offColor, reflect
+            );
+            return;
+        }
+
+        correctedGroup(
+                state, poseStack, collector, order, p, attachment,
+                "array/16seg", "base",
+                8.0F / 16.0F, 0.0F, 8.0F / 16.0F,
+                SEGMENT_BASE, reflect, 0xFFFFFF
+        );
+        for (int segment = 0; segment < 16; segment++) {
+            correctedGroup(
+                    state, poseStack, collector, order, p, attachment,
+                    "array/16seg", Integer.toString(segment),
+                    8.0F / 16.0F, 0.0F, 8.0F / 16.0F,
+                    SEGMENT_DIGIT,
+                    reflect,
+                    (p.bundledMask & 1 << segment) != 0
+                            ? onColor
+                            : offColor
+            );
+        }
+    }
+
+    private static void sevenSegment(
+            State state,
+            PoseStack poseStack,
+            SubmitNodeCollector collector,
+            int[] order,
+            Visual p,
+            Direction attachment,
+            float x,
+            float z,
+            int signal,
+            int onColor,
+            int offColor,
+            boolean reflect
+    ) {
+        correctedGroup(
+                state, poseStack, collector, order, p, attachment,
+                "array/7seg", "base",
+                x, 0.0F, z,
+                SEGMENT_BASE, reflect, 0xFFFFFF
+        );
+        for (int segment = 0; segment < 8; segment++) {
+            correctedGroup(
+                    state, poseStack, collector, order, p, attachment,
+                    "array/7seg", Integer.toString(segment),
+                    x, 0.0F, z,
+                    SEGMENT_DIGIT,
+                    reflect,
+                    (signal & 1 << segment) != 0
+                            ? onColor
+                            : offColor
+            );
+        }
+    }
+
+    private static void correctedGroup(
+            State state,
+            PoseStack poseStack,
+            SubmitNodeCollector collector,
+            int[] order,
+            Visual p,
+            Direction attachment,
+            String model,
+            String group,
+            float offsetX,
+            float offsetY,
+            float offsetZ,
+            Identifier texture,
+            boolean reflect,
+            int rgb
+    ) {
+        collector.order(order[0]++).submitCustomGeometry(
+                poseStack,
+                RenderTypes.entityCutout(texture),
+                (pose, consumer) -> ProjectRedObjModel.get(model)
+                        .renderCorrectedGroup(
+                                consumer,
+                                pose,
+                                state.lightCoords,
+                                attachment,
+                                p.gateRotation,
+                                offsetX,
+                                offsetY,
+                                offsetZ,
+                                1.0F,
+                                0.0F,
+                                reflect,
+                                rgb,
+                                group
+                        )
+        );
     }
 
     private static void pointer(
