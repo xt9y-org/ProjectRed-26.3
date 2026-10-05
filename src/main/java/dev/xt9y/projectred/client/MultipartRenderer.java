@@ -48,6 +48,7 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
     private static final Identifier SEGMENT_BASE = projectRed("integration/block/segment_display");
     private static final Identifier SEGMENT_DIGIT = projectRed("integration/block/segment_display_digit");
     private static final Identifier POINTER = projectRed("integration/block/pointer");
+    private static final Identifier CELLS = projectRed("integration/block/cells");
 
     public MultipartRenderer(BlockEntityRendererProvider.Context context) {}
 
@@ -661,7 +662,7 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
                     "array/nullcellbase",
                     .5F, 0.0F, .5F,
                     1.0F, 0.0F,
-                    arrayCellBase(p.gateType),
+                    CELLS,
                     reflect
             );
             case INVERT_CELL, BUFFER_CELL -> mesh(
@@ -669,7 +670,7 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
                     "array/extendedcellbase",
                     .5F, 0.0F, .5F,
                     1.0F, 0.0F,
-                    arrayCellBase(p.gateType),
+                    CELLS,
                     reflect
             );
             default -> mesh(
@@ -1001,7 +1002,7 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
             boolean reflect,
             float centerX
     ) {
-        Identifier texture = arrayCellBase(p.gateType);
+        Identifier texture = CELLS;
 
         switch (p.gateType) {
             case NULL_CELL -> {
