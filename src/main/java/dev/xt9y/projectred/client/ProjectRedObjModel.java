@@ -74,8 +74,7 @@ final class ProjectRedObjModel {
             float scaleXZ,
             float angleY,
             boolean reflect,
-            int rgb,
-            boolean invertModelX
+            int rgb
     ) {
         renderFiltered(
                 consumer, pose, light, attachment, rotation,
@@ -97,8 +96,7 @@ final class ProjectRedObjModel {
             float angleY,
             boolean reflect,
             int rgb,
-            String group,
-            boolean invertModelX
+            String group
     ) {
         renderFiltered(
                 consumer, pose, light, attachment, rotation,
@@ -142,7 +140,8 @@ final class ProjectRedObjModel {
             float angleY,
             boolean reflect,
             int rgb,
-            String group
+            String group,
+            boolean invertModelX
     ) {
         Direction right = MultipartBlockEntity.localToWorld(attachment, rotation, 1);
         Direction down = MultipartBlockEntity.localToWorld(attachment, rotation, 2);
