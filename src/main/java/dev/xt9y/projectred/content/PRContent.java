@@ -78,7 +78,7 @@ public final class PRContent {
     static {
         ResourceKey<Block> multipartKey = ResourceKey.create(Registries.BLOCK, ProjectRed263.id("multipart"));
         MULTIPART = new MultipartBlock(BlockBehaviour.Properties.of()
-                .noOcclusion().strength(0.2F).sound(SoundType.METAL).setId(multipartKey));
+                .noOcclusion().strength(0.2F).sound(SoundType.GLASS).setId(multipartKey));
         Registry.register(BuiltInRegistries.BLOCK, multipartKey, MULTIPART);
 
         MULTIPART_BE = Registry.register(
