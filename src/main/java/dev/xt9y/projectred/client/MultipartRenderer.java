@@ -261,19 +261,14 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
                 part.arraySignalB
         );
 
-        Identifier baseTexture = part.arrayCell
-                ? arrayCellBase(part.gateType)
-                : GATE_BASE;
-
-        collector.order(order[0]++).submitCustomGeometry(
+        submitGateBase(
+                state,
                 poseStack,
-                RenderTypes.entityCutout(baseTexture),
-                (pose, consumer) -> RenderGeometry.gateBoard(
-                        consumer,
-                        pose,
-                        state.lightCoords,
-                        attachment
-                )
+                collector,
+                order,
+                part,
+                attachment,
+                wires.reflect()
         );
 
         if (wires.count() > 0) {
