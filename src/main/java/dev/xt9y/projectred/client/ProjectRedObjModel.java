@@ -57,6 +57,27 @@ final class ProjectRedObjModel {
             float angleY,
             boolean reflect
     ) {
+        render(
+                consumer, pose, light, attachment, rotation,
+                offsetX, offsetY, offsetZ, scaleXZ, angleY, reflect,
+                0xFFFFFF
+        );
+    }
+
+    void render(
+            VertexConsumer consumer,
+            PoseStack.Pose pose,
+            int light,
+            Direction attachment,
+            int rotation,
+            float offsetX,
+            float offsetY,
+            float offsetZ,
+            float scaleXZ,
+            float angleY,
+            boolean reflect,
+            int rgb
+    ) {
         Direction right = MultipartBlockEntity.localToWorld(attachment, rotation, 1);
         Direction down = MultipartBlockEntity.localToWorld(attachment, rotation, 2);
         Direction normal = attachment.getOpposite();
@@ -79,7 +100,7 @@ final class ProjectRedObjModel {
                         right, down, normal,
                         originX, originY, originZ,
                         offsetX, offsetY, offsetZ,
-                        scaleXZ, cos, sin, reflect
+                        scaleXZ, cos, sin, reflect, rgb
                 );
                 emit(
                         consumer, pose, light,
@@ -87,7 +108,7 @@ final class ProjectRedObjModel {
                         right, down, normal,
                         originX, originY, originZ,
                         offsetX, offsetY, offsetZ,
-                        scaleXZ, cos, sin, reflect
+                        scaleXZ, cos, sin, reflect, rgb
                 );
                 continue;
             }
@@ -103,7 +124,7 @@ final class ProjectRedObjModel {
                         right,down,normal,
                         originX,originY,originZ,
                         offsetX,offsetY,offsetZ,
-                        scaleXZ,cos,sin,reflect
+                        scaleXZ,cos,sin,reflect,rgb
                 );
                 emit(
                         consumer, pose, light,
@@ -111,7 +132,7 @@ final class ProjectRedObjModel {
                         right,down,normal,
                         originX,originY,originZ,
                         offsetX,offsetY,offsetZ,
-                        scaleXZ,cos,sin,reflect
+                        scaleXZ,cos,sin,reflect,rgb
                 );
             }
         }
@@ -137,7 +158,8 @@ final class ProjectRedObjModel {
             float scaleXZ,
             float cos,
             float sin,
-            boolean reflect
+            boolean reflect,
+            int rgb
     ) {
         vertex(consumer,pose,light,a,right,down,normal,originX,originY,originZ,offsetX,offsetY,offsetZ,scaleXZ,cos,sin,reflect);
         vertex(consumer,pose,light,b,right,down,normal,originX,originY,originZ,offsetX,offsetY,offsetZ,scaleXZ,cos,sin,reflect);
@@ -162,7 +184,8 @@ final class ProjectRedObjModel {
             float scaleXZ,
             float cos,
             float sin,
-            boolean reflect
+            boolean reflect,
+            int rgb
     ) {
         float[] source = positions[ref.position];
         float x = source[0] * scaleXZ;
@@ -224,7 +247,12 @@ final class ProjectRedObjModel {
         }
 
         consumer.addVertex(pose,wx,wy,wz)
-                .setColor(255,255,255,255)
+                .setColor(
+                        rgb >> 16 & 0xFF,
+                        rgb >> 8 & 0xFF,
+                        rgb & 0xFF,
+                        255
+                )
                 .setUv(u,v)
                 .setOverlay(OverlayTexture.NO_OVERLAY)
                 .setLight(light)
