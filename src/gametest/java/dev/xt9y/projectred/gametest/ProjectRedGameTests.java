@@ -427,6 +427,119 @@ public final class ProjectRedGameTests {
         helper.succeed();
     }
 
+
+    @GameTest(structure = EMPTY, maxTicks = 40)
+    public void nullCellKeepsCrossingRedwireTracksIndependent(GameTestHelper helper) {
+        BlockPos gateRel = new BlockPos(3, 2, 3);
+        BlockPos northRel = gateRel.north();
+
+        helper.setBlock(gateRel.below(), Blocks.STONE.defaultBlockState());
+        helper.setBlock(gateRel, PRContent.MULTIPART.defaultBlockState());
+        helper.setBlock(northRel, Blocks.REDSTONE_BLOCK.defaultBlockState());
+
+        MultipartBlockEntity multipart = multipart(helper, gateRel);
+        GatePart cell = new GatePart(
+                GateType.NULL_CELL,
+                Direction.DOWN.ordinal(),
+                0
+        );
+        helper.assertTrue(multipart.add(cell), "failed to add null cell");
+
+        multipart.onNeighborSignalChanged();
+
+        helper.assertTrue(
+                multipart.vanillaSignal(Direction.SOUTH) == 15,
+                "north input must pass through the null-cell north/south track"
+        );
+        helper.assertTrue(
+                multipart.vanillaSignal(Direction.EAST) == 0,
+                "north input must not leak into the east/west crossing track"
+        );
+        helper.assertTrue(
+                multipart.vanillaSignal(Direction.WEST) == 0,
+                "north input must not leak into the east/west crossing track"
+        );
+
+        helper.setBlock(gateRel.east(), Blocks.REDSTONE_BLOCK.defaultBlockState());
+        multipart.onNeighborSignalChanged();
+
+        helper.assertTrue(
+                multipart.vanillaSignal(Direction.WEST) == 15,
+                "east input must independently pass through the east/west track"
+        );
+        helper.succeed();
+    }
+
+    @GameTest(structure = EMPTY, maxTicks = 40)
+    public void oppositeNullCellsAutoRotateForCrossingPlacement(GameTestHelper helper) {
+        BlockPos multipartRel = new BlockPos(3, 2, 3);
+
+        helper.setBlock(multipartRel.below(), Blocks.STONE.defaultBlockState());
+        helper.setBlock(multipartRel.above(), Blocks.STONE.defaultBlockState());
+        helper.setBlock(multipartRel, PRContent.MULTIPART.defaultBlockState());
+
+        MultipartBlockEntity multipart = multipart(helper, multipartRel);
+
+        GatePart bottom = new GatePart(
+                GateType.NULL_CELL,
+                Direction.DOWN.ordinal(),
+                0
+        );
+        helper.assertTrue(multipart.add(bottom), "failed to add first null cell");
+
+        GatePart top = new GatePart(
+                GateType.NULL_CELL,
+                Direction.UP.ordinal(),
+                0
+        );
+        multipart.preparePlacement(top);
+
+        helper.assertTrue(
+                top.rotation() == 1,
+                "opposite null cell with matching track must auto-rotate perpendicular"
+        );
+        helper.assertTrue(
+                multipart.canAdd(top),
+                "perpendicular opposite null cells must fit in one multipart"
+        );
+        helper.assertTrue(multipart.add(top), "failed to add crossing null cell");
+
+        WirePart framed = new WirePart(
+                requireWire("framed_red_alloy_wire"),
+                Part.CENTER_SLOT
+        );
+        helper.assertTrue(
+                !multipart.canAdd(framed),
+                "array cells must occlude center/framed wire slot"
+        );
+        helper.succeed();
+    }
+
+    @GameTest(structure = EMPTY, maxTicks = 40)
+    public void unsupportedFaceWireDropsWhenSupportIsRemoved(GameTestHelper helper) {
+        BlockPos wireRel = new BlockPos(3, 2, 3);
+        BlockPos supportRel = wireRel.below();
+
+        helper.setBlock(supportRel, Blocks.STONE.defaultBlockState());
+        helper.setBlock(wireRel, PRContent.MULTIPART.defaultBlockState());
+
+        MultipartBlockEntity multipart = multipart(helper, wireRel);
+        WirePart wire = new WirePart(
+                requireWire("red_alloy_wire"),
+                Direction.DOWN.ordinal()
+        );
+        helper.assertTrue(multipart.add(wire), "failed to add supported wire");
+
+        helper.setBlock(supportRel, Blocks.AIR.defaultBlockState());
+        multipart.onNeighborSignalChanged();
+
+        helper.assertTrue(
+                helper.getBlockState(wireRel).isAir(),
+                "removing support must remove the last unsupported face part"
+        );
+        helper.succeed();
+    }
+
     private static Rig line(
             GameTestHelper helper,
             String firstId,
