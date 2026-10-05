@@ -80,6 +80,7 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
             int bundleMask,
             int panelMask,
             int bundledMask,
+            boolean pointerRunning,
             float pointerAngle,
             float pointerOffset
     ) {}
@@ -121,6 +122,7 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
                         false,
                         0, 0, 0,
                         0, 0, 0, 0, 0, 0, 0,
+                        false,
                         Float.NaN,
                         0.0F
                 ));
@@ -156,6 +158,7 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
                         gate.bundleMask(),
                         gate.panelMask(),
                         gate.segmentMask(),
+                        gate.pointerRunning(),
                         gate.pointerAngle(
                                 blockEntity.getLevel() == null
                                         ? 0L
@@ -486,7 +489,7 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
                                 | GateVisuals.flipMaskZ(p.gateState)
                         : p.gateState;
                 torch(state,poseStack,collector,order,p,attachment,10,3.5F,6,(s & 0x10) != 0,reflect);
-                torch(state,poseStack,collector,order,p,attachment,13,8,12,p.pointerAngle > -(float)Math.PI / 2.0F + .001F,reflect);
+                torch(state,poseStack,collector,order,p,attachment,13,8,12,p.pointerRunning,reflect);
                 chip(state,poseStack,collector,order,p,attachment,6.5F,10,p.gateState2 != 0,RED_CHIP_OFF,RED_CHIP_ON,reflect);
                 pointer(state,poseStack,collector,order,p,attachment,.125F);
             }
@@ -529,9 +532,13 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
             }
             case COMPARATOR -> {
                 torch(state,poseStack,collector,order,p,attachment,8,2,6,(p.gateState & 0x10) != 0,reflect);
-                boolean active = (p.gateState & 0x10) != 0;
-                chip(state,poseStack,collector,order,p,attachment,5,8,active && p.gateShape == 1,MINUS_CHIP_OFF,MINUS_CHIP_ON,reflect);
-                chip(state,poseStack,collector,order,p,attachment,11,8,active && p.gateShape != 1,PLUS_CHIP_OFF,PLUS_CHIP_ON,reflect);
+
+                // Legacy RenderComparator renders the +/- chips outside the
+                // reflected model pass. Their state follows low bit 0, which
+                // digitizes the currently calculated comparator output.
+                boolean active = (p.gateState & 1) != 0;
+                chip(state,poseStack,collector,order,p,attachment,5,8,active && p.gateShape == 1,MINUS_CHIP_OFF,MINUS_CHIP_ON,false);
+                chip(state,poseStack,collector,order,p,attachment,11,8,active && p.gateShape != 1,PLUS_CHIP_OFF,PLUS_CHIP_ON,false);
             }
             case AND_CELL -> {
                 arrayRail(state,poseStack,collector,order,p,attachment,reflect,.50F);
