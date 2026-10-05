@@ -498,11 +498,9 @@ public final class GatePart extends Part {
                 ? 4
                 : 0;
 
-        // RainSensor inherits SimpleGatePart's feedbackMask(4) path upstream,
-        // so its low nibble mirrors redstone seen on the output side just
-        // like LightSensor. Keep the feedback bookkeeping identical.
-        int feedback = owner.gateInput(this, 4);
-        state = (feedback & 0xF) | (out << 4);
+        // Unlike LightSensor, upstream RainSensor has no feedback mask.
+        // Its low input nibble therefore remains untouched.
+        state = (state & 0xF) | (out << 4);
     }
 
     private void tickTimer(MultipartBlockEntity owner, long time) {
