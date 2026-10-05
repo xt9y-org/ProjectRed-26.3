@@ -145,15 +145,17 @@ public final class GatePart extends Part {
         // Upstream changes the configured maximum in-place. A running timer
         // keeps its elapsed pointer and naturally fires sooner/later against
         // the new limit.
-        timerPeriod = Math.max(
+        timerPeriod = clampAdd(
+                timerPeriod,
+                delta,
                 4,
-                Math.min(20 * 60 * 60, timerPeriod + delta)
+                20 * 60 * 60
         );
     }
 
     public void adjustCounterMax(int delta) {
         int oldValue = counterValue;
-        counterMax = Math.max(1, Math.min(32767, counterMax + delta));
+        counterMax = clampAdd(counterMax, delta, 1, 32767);
         counterValue = Math.min(counterValue, counterMax);
 
         // Counter increments/decrements are independent settings upstream;
@@ -165,16 +167,20 @@ public final class GatePart extends Part {
     }
 
     public void adjustCounterIncrement(int delta) {
-        counterIncrement = Math.max(
+        counterIncrement = clampAdd(
+                counterIncrement,
+                delta,
                 1,
-                Math.min(counterMax, counterIncrement + delta)
+                counterMax
         );
     }
 
     public void adjustCounterDecrement(int delta) {
-        counterDecrement = Math.max(
+        counterDecrement = clampAdd(
+                counterDecrement,
+                delta,
                 1,
-                Math.min(counterMax, counterDecrement + delta)
+                counterMax
         );
     }
 
@@ -992,6 +998,16 @@ public final class GatePart extends Part {
         part.bundleMask = intAt(p, 20, 0xFFFF);
         part.pressMask = intAt(p, 21, 0);
         return part;
+    }
+
+    private static int clampAdd(
+            int value,
+            int delta,
+            int minimum,
+            int maximum
+    ) {
+        long sum = (long) value + delta;
+        return (int) Math.max(minimum, Math.min((long) maximum, sum));
     }
 
     private static int intAt(String[] p, int index, int fallback) {
