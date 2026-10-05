@@ -531,7 +531,10 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
                 arrayRail(state,poseStack,collector,order,p,attachment,reflect,.50F);
                 torch(state,poseStack,collector,order,p,attachment,8,13,6,(p.gateState & 4) == 0,reflect);
                 torch(state,poseStack,collector,order,p,attachment,8,2,8,(p.gateState & 0x10) != 0,reflect);
-                torch(state,poseStack,collector,order,p,attachment,8,8,6,p.arraySignalB == 0,reflect);
+                flippedTorch(
+                        state,poseStack,collector,order,p,attachment,
+                        8,8,p.arraySignalB == 0,reflect
+                );
             }
             case BUS_RANDOMIZER -> {
                 mesh(state,poseStack,collector,order,p,attachment,
@@ -834,6 +837,34 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
                         consumer, pose, state.lightCoords,
                         attachment, p.gateRotation,
                         x, z, height, reflect
+                )
+        );
+    }
+
+    private static void flippedTorch(
+            State state,
+            PoseStack poseStack,
+            SubmitNodeCollector collector,
+            int[] order,
+            Visual p,
+            Direction attachment,
+            float x,
+            float z,
+            boolean on,
+            boolean reflect
+    ) {
+        collector.order(order[0]++).submitCustomGeometry(
+                poseStack,
+                RenderTypes.entityCutout(on ? TORCH_ON : TORCH_OFF),
+                (pose, consumer) -> RenderGeometry.gateFlippedTorch(
+                        consumer,
+                        pose,
+                        state.lightCoords,
+                        attachment,
+                        p.gateRotation,
+                        x,
+                        z,
+                        reflect
                 )
         );
     }
