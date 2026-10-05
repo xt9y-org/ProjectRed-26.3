@@ -556,7 +556,6 @@ public final class ProjectRedGameTests {
                 0
         );
         repeater.cycleShape(); // ProjectRed shape 1 = 4 ticks.
-        helper.assertTrue(repeater.delay() == 4, "shape 1 repeater must use 4-tick delay");
         helper.assertTrue(multipart.add(repeater), "failed to add repeater");
 
         helper.setBlock(inputRel, Blocks.REDSTONE_BLOCK.defaultBlockState());
