@@ -51,7 +51,8 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
             int bundledMask,
             int panelMask,
             float pointerAngle,
-            float pointerOffset
+            float pointerOffset,
+            int activePortMask
     ) {}
 
     @Override
@@ -90,7 +91,8 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
                         0,
                         0,
                         Float.NaN,
-                        0.0F
+                        0.0F,
+                        0
                 ));
             } else if (part instanceof GatePart gate) {
                 out.add(new Visual(
@@ -116,7 +118,8 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
                                         : blockEntity.getLevel().getDefaultClockTime(),
                                 partialTick
                         ),
-                        gate.pointerLateralOffset()
+                        gate.pointerLateralOffset(),
+                        gate.activePortMask()
                 ));
             }
         }
@@ -291,17 +294,24 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
                 );
             }
 
-            if (part.powered) {
-                collector.order(order++).submitCustomGeometry(
-                        poseStack,
-                        RenderTypes.entityCutout(WIRE_ON),
-                        (pose, consumer) -> RenderGeometry.gateIndicator(
-                                consumer,
-                                pose,
-                                0x00F000F0,
-                                attachment
-                        )
-                );
+            if (part.activePortMask != 0) {
+                for (int local = 0; local < 4; local++) {
+                    if ((part.activePortMask & (1 << local)) == 0) continue;
+                    final int activeLocal = local;
+                    collector.order(order++).submitCustomGeometry(
+                            poseStack,
+                            RenderTypes.entityCutout(WIRE_ON),
+                            (pose, consumer) -> RenderGeometry.gatePortIndicator(
+                                    consumer,
+                                    pose,
+                                    0x00F000F0,
+                                    attachment,
+                                    part.gateRotation,
+                                    activeLocal,
+                                    part.arrayCell ? .755F : .132F
+                            )
+                    );
+                }
             }
         }
     }

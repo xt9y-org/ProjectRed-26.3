@@ -114,6 +114,35 @@ public final class GatePart extends Part {
         return pressMask & 0xFFFF;
     }
 
+    public int activePortMask() {
+        int mask = state & 0xF;
+
+        for (int local = 0; local < 4; local++) {
+            if (outputRawLocal(local) > 0) {
+                mask |= 1 << local;
+            }
+
+            int[] bundled = bundledOutputLocal(local);
+            if (bundled != null && !BundledSignals.isZero(bundled)) {
+                mask |= 1 << local;
+            }
+        }
+
+        switch (type) {
+            case BUS_TRANSCEIVER -> {
+                if (bundleInput0 != 0) mask |= 1;
+                if (bundleInput2 != 0) mask |= 4;
+            }
+            case BUS_CONVERTER, SEGMENT_DISPLAY -> {
+                if (bundleInput0 != 0) mask |= 1;
+            }
+            default -> {
+            }
+        }
+
+        return mask & 0xF;
+    }
+
     public float pointerAngle(
             long gameTime,
             long clockTime,

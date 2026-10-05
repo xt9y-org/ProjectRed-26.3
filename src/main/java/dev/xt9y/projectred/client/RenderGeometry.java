@@ -200,6 +200,77 @@ final class RenderGeometry {
         );
     }
 
+    static void gatePortIndicator(
+            VertexConsumer c,
+            PoseStack.Pose pose,
+            int light,
+            Direction attachment,
+            int rotation,
+            int local,
+            float surfaceDepth
+    ) {
+        Direction direction = MultipartBlockEntity.localToWorld(
+                attachment,
+                rotation,
+                local
+        );
+        Direction perpendicular = MultipartBlockEntity.localToWorld(
+                attachment,
+                rotation,
+                (local + 1) & 3
+        );
+
+        float dx = direction.getStepX();
+        float dy = direction.getStepY();
+        float dz = direction.getStepZ();
+        float px = perpendicular.getStepX();
+        float py = perpendicular.getStepY();
+        float pz = perpendicular.getStepZ();
+
+        float cx = .5F + dx * .34F;
+        float cy = .5F + dy * .34F;
+        float cz = .5F + dz * .34F;
+
+        float face = surfaceDepth + .003F;
+        switch (attachment) {
+            case DOWN -> cy = face;
+            case UP -> cy = 1.0F - face;
+            case NORTH -> cz = face;
+            case SOUTH -> cz = 1.0F - face;
+            case WEST -> cx = face;
+            case EAST -> cx = 1.0F - face;
+        }
+
+        float along = .105F;
+        float across = .045F;
+
+        float ax = cx - dx * along - px * across;
+        float ay = cy - dy * along - py * across;
+        float az = cz - dz * along - pz * across;
+        float bx = cx + dx * along - px * across;
+        float by = cy + dy * along - py * across;
+        float bz = cz + dz * along - pz * across;
+        float cx2 = cx + dx * along + px * across;
+        float cy2 = cy + dy * along + py * across;
+        float cz2 = cz + dz * along + pz * across;
+        float dx2 = cx - dx * along + px * across;
+        float dy2 = cy - dy * along + py * across;
+        float dz2 = cz - dz * along + pz * across;
+
+        face(
+                c,
+                pose,
+                light,
+                -attachment.getStepX(),
+                -attachment.getStepY(),
+                -attachment.getStepZ(),
+                ax, ay, az, 0, 1,
+                bx, by, bz, 1, 1,
+                cx2, cy2, cz2, 1, 0,
+                dx2, dy2, dz2, 0, 0
+        );
+    }
+
     static void gateIndicator(
             VertexConsumer c,
             PoseStack.Pose pose,
