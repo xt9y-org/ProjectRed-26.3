@@ -225,7 +225,8 @@ final class ProjectRedObjModel {
             float cos,
             float sin,
             boolean reflect,
-            int rgb
+            int rgb,
+            boolean invertModelX
     ) {
         vertex(consumer,pose,light,a,right,down,normal,originX,originY,originZ,offsetX,offsetY,offsetZ,scaleXZ,cos,sin,reflect,rgb,invertModelX);
         vertex(consumer,pose,light,b,right,down,normal,originX,originY,originZ,offsetX,offsetY,offsetZ,scaleXZ,cos,sin,reflect,rgb,invertModelX);
