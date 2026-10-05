@@ -118,6 +118,34 @@ public final class GatePart extends Part {
         return pressMask & 0xFFFF;
     }
 
+    public int arraySignalA() {
+        return arraySignalA;
+    }
+
+    public int arraySignalB() {
+        return arraySignalB;
+    }
+
+    public int bundleInput0() {
+        return bundleInput0 & 0xFFFF;
+    }
+
+    public int bundleInput2() {
+        return bundleInput2 & 0xFFFF;
+    }
+
+    public int bundleOutput0() {
+        return bundleOutput0 & 0xFFFF;
+    }
+
+    public int bundleOutput2() {
+        return bundleOutput2 & 0xFFFF;
+    }
+
+    public int bundleMask() {
+        return bundleMask & 0xFFFF;
+    }
+
     public int activePortMask() {
         int mask = state & 0xF;
 
