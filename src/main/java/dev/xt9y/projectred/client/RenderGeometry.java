@@ -468,6 +468,40 @@ final class RenderGeometry {
         );
     }
 
+    static void gateFlippedTorch(
+            VertexConsumer c,
+            PoseStack.Pose pose,
+            int light,
+            Direction attachment,
+            int rotation,
+            float x,
+            float z,
+            boolean reflect
+    ) {
+        float cx = x / 16.0F;
+        float cz = z / 16.0F;
+
+        // FlippedRSTorchModel is a height-4 torch rotated 180 degrees around
+        // the model Z axis, then shifted down by 6/16. Its final visible
+        // range is 5/16..10/16 above the gate plane.
+        gateComponentBox(
+                c, pose, light, attachment, rotation,
+                cx, cz,
+                .25F, .125F,
+                5.0F / 16.0F,
+                5.0F / 16.0F,
+                reflect
+        );
+        gateComponentBox(
+                c, pose, light, attachment, rotation,
+                cx, cz,
+                .125F, .25F,
+                5.0F / 16.0F,
+                5.0F / 16.0F,
+                reflect
+        );
+    }
+
     static void gateChip(
             VertexConsumer c,
             PoseStack.Pose pose,
