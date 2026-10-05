@@ -1,5 +1,6 @@
 package dev.xt9y.projectred.network;
 
+import dev.xt9y.projectred.content.PRContent;
 import dev.xt9y.projectred.integration.GatePart;
 import dev.xt9y.projectred.integration.GateType;
 import dev.xt9y.projectred.multipart.MultipartBlockEntity;
@@ -8,10 +9,14 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
+import net.fabricmc.fabric.api.event.player.PlayerPickItemEvents;
 import net.minecraft.core.BlockPos;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
 
 public final class PRNetworking {
     private static boolean initialized;
@@ -44,6 +49,11 @@ public final class PRNetworking {
         PlayerBlockBreakEvents.BEFORE.register(
                 (level, player, pos, state, blockEntity) ->
                         beforeBlockBreak(player, pos, blockEntity)
+        );
+
+        PlayerPickItemEvents.BLOCK.register(
+                (player, pos, state, includeData) ->
+                        pickMultipartPart(player, pos)
         );
         ServerPlayNetworking.registerGlobalReceiver(
                 GateConfigEditPayload.TYPE,
@@ -103,6 +113,40 @@ public final class PRNetworking {
         }
 
         return false;
+    }
+
+    private static net.minecraft.world.item.ItemStack pickMultipartPart(
+            ServerPlayer player,
+            BlockPos pos
+    ) {
+        if (!(player.level().getBlockEntity(pos)
+                instanceof MultipartBlockEntity multipart)) {
+            return null;
+        }
+
+        Vec3 start = player.getEyePosition();
+        Vec3 end = start.add(player.getViewVector(1.0F).scale(8.0D));
+        BlockHitResult hit = player.level().clip(
+                new ClipContext(
+                        start,
+                        end,
+                        ClipContext.Block.OUTLINE,
+                        ClipContext.Fluid.NONE,
+                        player
+                )
+        );
+
+        if (!hit.getBlockPos().equals(pos)) {
+            return null;
+        }
+
+        int slot = multipart.slotFromHit(hit.getLocation());
+        Part part = multipart.part(slot);
+        if (part == null) {
+            return null;
+        }
+
+        return PRContent.stackFor(part);
     }
 
     public static boolean openGateConfig(
