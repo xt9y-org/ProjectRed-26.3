@@ -439,7 +439,26 @@ public final class GatePart extends Part {
     }
 
     public boolean tick(MultipartBlockEntity owner) {
-        String before = encode();
+        int beforeState = state;
+        int beforeState2 = state2;
+        long beforeScheduledAt = scheduledAt;
+        int beforeTimerPeriod = timerPeriod;
+        long beforePointerStart = pointerStart;
+        boolean beforePointerRebase = pointerNeedsWorldTimeRebase;
+        int beforeCounterValue = counterValue;
+        int beforeCounterMax = counterMax;
+        int beforeCounterIncrement = counterIncrement;
+        int beforeCounterDecrement = counterDecrement;
+        int beforeArraySignalA = arraySignalA;
+        int beforeArraySignalB = arraySignalB;
+        int beforeBundleInput0 = bundleInput0;
+        int beforeBundleInput2 = bundleInput2;
+        int beforeBundleOutput0 = bundleOutput0;
+        int beforeBundleOutput2 = bundleOutput2;
+        int beforeBundleMask = bundleMask;
+        int beforePressMask = pressMask;
+        boolean beforeTickSound = tickSoundPending;
+
         long time = owner.getLevel() == null ? 0 : owner.getLevel().getGameTime();
 
         if (tickSoundPending) {
@@ -471,7 +490,25 @@ public final class GatePart extends Part {
             default -> onChange(owner);
         }
 
-        return !before.equals(encode());
+        return state != beforeState
+                || state2 != beforeState2
+                || scheduledAt != beforeScheduledAt
+                || timerPeriod != beforeTimerPeriod
+                || pointerStart != beforePointerStart
+                || pointerNeedsWorldTimeRebase != beforePointerRebase
+                || counterValue != beforeCounterValue
+                || counterMax != beforeCounterMax
+                || counterIncrement != beforeCounterIncrement
+                || counterDecrement != beforeCounterDecrement
+                || arraySignalA != beforeArraySignalA
+                || arraySignalB != beforeArraySignalB
+                || bundleInput0 != beforeBundleInput0
+                || bundleInput2 != beforeBundleInput2
+                || bundleOutput0 != beforeBundleOutput0
+                || bundleOutput2 != beforeBundleOutput2
+                || bundleMask != beforeBundleMask
+                || pressMask != beforePressMask
+                || tickSoundPending != beforeTickSound;
     }
 
     private void tickLightSensor(MultipartBlockEntity owner) {
