@@ -624,6 +624,52 @@ public final class ProjectRedGameTests {
         });
     }
 
+
+    @GameTest(structure = EMPTY, maxTicks = 40)
+    public void framedWireSharesMultipartWithFaceWire(GameTestHelper helper) {
+        BlockPos multipartRel = new BlockPos(3, 2, 3);
+        BlockPos sourceRel = multipartRel.north();
+
+        helper.setBlock(multipartRel.below(), Blocks.STONE.defaultBlockState());
+        helper.setBlock(sourceRel, Blocks.REDSTONE_BLOCK.defaultBlockState());
+        helper.setBlock(multipartRel, PRContent.MULTIPART.defaultBlockState());
+
+        MultipartBlockEntity multipart = multipart(helper, multipartRel);
+
+        WirePart face = new WirePart(
+                requireWire("red_alloy_wire"),
+                Direction.DOWN.ordinal()
+        );
+        WirePart framed = new WirePart(
+                requireWire("framed_red_alloy_wire"),
+                Part.CENTER_SLOT
+        );
+
+        helper.assertTrue(multipart.add(face), "failed to add face red-alloy wire");
+        helper.assertTrue(
+                multipart.canAdd(framed),
+                "framed center wire must coexist with ordinary face wire"
+        );
+        helper.assertTrue(multipart.add(framed), "failed to add framed center wire");
+
+        multipart.onNeighborSignalChanged();
+
+        helper.assertTrue(
+                face.signal() == 255,
+                "face wire should read full adjacent vanilla redstone power"
+        );
+        helper.assertTrue(
+                framed.signal() == 254,
+                "framed center wire must receive face-wire signal with one-step attenuation"
+        );
+        helper.assertTrue(
+                multipart.hasSlot(Direction.DOWN.ordinal())
+                        && multipart.hasSlot(Part.CENTER_SLOT),
+                "face and center parts must remain independently addressable"
+        );
+        helper.succeed();
+    }
+
     private static Rig line(
             GameTestHelper helper,
             String firstId,
