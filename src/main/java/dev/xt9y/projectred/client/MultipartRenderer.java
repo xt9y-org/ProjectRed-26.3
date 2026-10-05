@@ -964,17 +964,18 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
         collector.order(order[0]++).submitCustomGeometry(
                 poseStack,
                 RenderTypes.entityCutout(WIRE_ON),
-                (pose, consumer) -> {
-                    int oldRotation = p.gateRotation;
-                    RenderGeometry.panelButtons(
-                            consumer,
-                            pose,
-                            0x00F000F0,
-                            attachment,
-                            oldRotation,
-                            mask
-                    );
-                }
+                (pose, consumer) -> RenderGeometry.gatePanelLights(
+                        consumer,
+                        pose,
+                        0x00F000F0,
+                        attachment,
+                        p.gateRotation,
+                        mask,
+                        x / 16.0F,
+                        z / 16.0F,
+                        x < 8.0F,
+                        reflect
+                )
         );
     }
 
@@ -989,17 +990,18 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
             boolean reflect
     ) {
         if (level <= 0) return;
-        int bits = (1 << Math.min(16, Math.max(1, level + 1))) - 1;
         collector.order(order[0]++).submitCustomGeometry(
                 poseStack,
                 RenderTypes.entityCutout(WIRE_ON),
-                (pose, consumer) -> RenderGeometry.panelButtons(
+                (pose, consumer) -> RenderGeometry.gateSignalBar(
                         consumer,
                         pose,
                         0x00F000F0,
                         attachment,
                         p.gateRotation,
-                        bits
+                        level,
+                        p.gateShape != 0,
+                        reflect
                 )
         );
     }
