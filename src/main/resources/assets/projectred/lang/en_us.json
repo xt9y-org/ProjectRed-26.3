@@ -137,5 +137,10 @@
   "item.projectred.brown_illumar": "Brown Illumar",
   "item.projectred.green_illumar": "Green Illumar",
   "item.projectred.red_illumar": "Red Illumar",
-  "item.projectred.black_illumar": "Black Illumar"
+  "item.projectred.black_illumar": "Black Illumar",
+  "tag.item.projectred.insulated_wire": "Insulated Wires",
+  "tag.item.projectred.bundled_wire": "Bundled Wires",
+  "tag.item.projectred.framed_insulated_wire": "Framed Insulated Wires",
+  "tag.item.projectred.framed_bundled_wire": "Framed Bundled Wires",
+  "tag.item.projectred.illumar": "Illumars"
 }
