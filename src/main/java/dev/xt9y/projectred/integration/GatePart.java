@@ -771,7 +771,7 @@ public final class GatePart extends Part {
         }
     }
 
-    private int inputMask() {
+    int inputMask() {
         return switch (type) {
             case OR, NOR, AND, NAND -> ~shape << 1 & 0xE;
             case NOT, BUFFER, PULSE, REPEATER, RANDOMIZER, DEC_RANDOMIZER -> 4;
@@ -797,7 +797,7 @@ public final class GatePart extends Part {
         };
     }
 
-    private int outputMask() {
+    int outputMask() {
         return switch (type) {
             case OR, NOR, AND, NAND, XOR, XNOR, MULTIPLEXER, PULSE, REPEATER,
                     SYNCHRONIZER, COMPARATOR, AND_CELL, TRANSPARENT_LATCH_CELL -> 1;
@@ -844,7 +844,7 @@ public final class GatePart extends Part {
         };
     }
 
-    private int calcOutput(int input) {
+    int calcOutput(int input) {
         return switch (type) {
             case OR -> input != 0 ? 1 : 0;
             case NOR -> input == 0 ? 1 : 0;
