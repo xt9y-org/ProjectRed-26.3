@@ -12,7 +12,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.RedstoneWireBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 
 public final class ProjectRedGameTests {
@@ -629,14 +628,12 @@ public final class ProjectRedGameTests {
     public void framedWireSharesMultipartWithFaceWire(GameTestHelper helper) {
         BlockPos multipartRel = new BlockPos(3, 2, 3);
         BlockPos dustRel = multipartRel.north();
+        BlockPos sourceRel = dustRel.north();
 
         helper.setBlock(multipartRel.below(), Blocks.STONE.defaultBlockState());
         helper.setBlock(dustRel.below(), Blocks.STONE.defaultBlockState());
-        helper.setBlock(
-                dustRel,
-                Blocks.REDSTONE_WIRE.defaultBlockState()
-                        .setValue(RedstoneWireBlock.POWER, 15)
-        );
+        helper.setBlock(sourceRel, Blocks.REDSTONE_BLOCK.defaultBlockState());
+        helper.setBlock(dustRel, Blocks.REDSTONE_WIRE.defaultBlockState());
         helper.setBlock(multipartRel, PRContent.MULTIPART.defaultBlockState());
 
         MultipartBlockEntity multipart = multipart(helper, multipartRel);
