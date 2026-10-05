@@ -97,6 +97,35 @@ for model_path in (ASSETS / "models").rglob("*.json"):
                 f"{model_path.relative_to(ROOT)}"
             )
 
+# Validate literal ProjectRed renderer texture references embedded in Java.
+# Dynamic gate surface names are covered separately below by their manifest.
+java_root = ROOT / "src/main/java"
+for java_path in java_root.rglob("*.java"):
+    source = java_path.read_text()
+    for texture in re.findall(r'projectRed\("([a-z0-9/._-]+)"\)', source):
+        texture_path = ASSETS / "textures" / f"{texture}.png"
+        if not texture_path.is_file():
+            errors.append(
+                f"missing ProjectRed renderer texture {texture} referenced by "
+                f"{java_path.relative_to(ROOT)}"
+            )
+
+# MultipartRenderer builds gate surface paths dynamically. Keep this explicit
+# so every one of the 34 Integration render paths is checked by CI.
+gate_surface_textures = {
+    "or-0", "nor-0", "not-0", "and-0", "nand-0", "xor-0", "xnor-0",
+    "buffer-0", "multiplexer-0", "pulse-0", "repeater-0", "rand-0",
+    "rslatch-0", "rslatch2-0", "toglatch-0", "translatch-0",
+    "lightsensor-0", "rainsensor-0", "time-0", "count-0", "statecell-0",
+    "sync-0", "busxcvr-0", "invcell-0", "buffcell-0", "comparator-0",
+    "andcell-0", "busrand1-0", "busrand2-0", "busconv-0", "businput-0",
+    "transparent-latch-cell-0", "decrand-0",
+}
+surface_dir = ASSETS / "textures/integration/surface"
+for texture in gate_surface_textures:
+    if not (surface_dir / f"{texture}.png").is_file():
+        errors.append(f"missing dynamic gate surface texture: {texture}")
+
 # All resource paths must be legal Minecraft identifiers.
 legal_path = re.compile(r"^[a-z0-9/._-]+$")
 for base in (ASSETS, DATA):
