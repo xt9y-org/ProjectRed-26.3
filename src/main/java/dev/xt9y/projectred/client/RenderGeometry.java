@@ -535,6 +535,15 @@ final class RenderGeometry {
         float lo = .5F - half;
         float hi = .5F + half;
 
+        int connectionCount = 0;
+        Direction onlyConnection = null;
+        for (Direction direction : Direction.values()) {
+            if ((connections & (1 << direction.ordinal())) == 0) continue;
+            if (direction.getAxis() == attachment.getAxis()) continue;
+            connectionCount++;
+            onlyConnection = direction;
+        }
+
         for (Direction direction : Direction.values()) {
             if ((connections & (1 << direction.ordinal())) == 0) continue;
             if (direction.getAxis() == attachment.getAxis()) continue;
@@ -576,6 +585,85 @@ final class RenderGeometry {
                     if (direction == Direction.NORTH) box(c,pose,light,1-depth,lo,0,1,hi,.5F);
                     if (direction == Direction.SOUTH) box(c,pose,light,1-depth,lo,.5F,1,hi,1);
                 }
+            }
+        }
+
+        // RenderWire generates short opposite stubs for isolated wires and
+        // one-ended runs. They are part of ProjectRed's characteristic wire
+        // silhouette and prevent loose ends from looking like plain squares.
+        if (connectionCount == 0) {
+            wireStub(
+                    c, pose, light, attachment,
+                    MultipartBlockEntity.localToWorld(attachment, 0, 1),
+                    width, depth
+            );
+            wireStub(
+                    c, pose, light, attachment,
+                    MultipartBlockEntity.localToWorld(attachment, 0, 3),
+                    width, depth
+            );
+        } else if (connectionCount == 1 && onlyConnection != null) {
+            wireStub(
+                    c, pose, light, attachment,
+                    onlyConnection.getOpposite(),
+                    width, depth
+            );
+        }
+    }
+
+    private static void wireStub(
+            VertexConsumer c,
+            PoseStack.Pose pose,
+            int light,
+            Direction attachment,
+            Direction direction,
+            float width,
+            float depth
+    ) {
+        if (direction.getAxis() == attachment.getAxis()) return;
+
+        float half = width * .5F;
+        float lo = .5F - half;
+        float hi = .5F + half;
+        float q0 = .25F;
+        float q1 = .75F;
+
+        switch (attachment) {
+            case DOWN -> {
+                if (direction == Direction.NORTH) box(c,pose,light,lo,0,q0,hi,depth,.5F);
+                if (direction == Direction.SOUTH) box(c,pose,light,lo,0,.5F,hi,depth,q1);
+                if (direction == Direction.WEST) box(c,pose,light,q0,0,lo,.5F,depth,hi);
+                if (direction == Direction.EAST) box(c,pose,light,.5F,0,lo,q1,depth,hi);
+            }
+            case UP -> {
+                if (direction == Direction.NORTH) box(c,pose,light,lo,1-depth,q0,hi,1,.5F);
+                if (direction == Direction.SOUTH) box(c,pose,light,lo,1-depth,.5F,hi,1,q1);
+                if (direction == Direction.WEST) box(c,pose,light,q0,1-depth,lo,.5F,1,hi);
+                if (direction == Direction.EAST) box(c,pose,light,.5F,1-depth,lo,q1,1,hi);
+            }
+            case NORTH -> {
+                if (direction == Direction.UP) box(c,pose,light,lo,.5F,0,hi,q1,depth);
+                if (direction == Direction.DOWN) box(c,pose,light,lo,q0,0,hi,.5F,depth);
+                if (direction == Direction.WEST) box(c,pose,light,q0,lo,0,.5F,hi,depth);
+                if (direction == Direction.EAST) box(c,pose,light,.5F,lo,0,q1,hi,depth);
+            }
+            case SOUTH -> {
+                if (direction == Direction.UP) box(c,pose,light,lo,.5F,1-depth,hi,q1,1);
+                if (direction == Direction.DOWN) box(c,pose,light,lo,q0,1-depth,hi,.5F,1);
+                if (direction == Direction.WEST) box(c,pose,light,q0,lo,1-depth,.5F,hi,1);
+                if (direction == Direction.EAST) box(c,pose,light,.5F,lo,1-depth,q1,hi,1);
+            }
+            case WEST -> {
+                if (direction == Direction.UP) box(c,pose,light,0,.5F,lo,depth,q1,hi);
+                if (direction == Direction.DOWN) box(c,pose,light,0,q0,lo,depth,.5F,hi);
+                if (direction == Direction.NORTH) box(c,pose,light,0,lo,q0,depth,hi,.5F);
+                if (direction == Direction.SOUTH) box(c,pose,light,0,lo,.5F,depth,hi,q1);
+            }
+            case EAST -> {
+                if (direction == Direction.UP) box(c,pose,light,1-depth,.5F,lo,1,q1,hi);
+                if (direction == Direction.DOWN) box(c,pose,light,1-depth,q0,lo,1,.5F,hi);
+                if (direction == Direction.NORTH) box(c,pose,light,1-depth,lo,q0,1,hi,.5F);
+                if (direction == Direction.SOUTH) box(c,pose,light,1-depth,lo,.5F,1,hi,q1);
             }
         }
     }
