@@ -1057,16 +1057,18 @@ public final class ProjectRedGameTests {
     public void directionalVanillaRepeaterFeedsOnlyTowardProjectRed(GameTestHelper helper) {
         BlockPos wireRel = new BlockPos(3, 2, 3);
         BlockPos repeaterRel = wireRel.west();
+        BlockPos sourceRel = repeaterRel.west();
 
         helper.setBlock(wireRel.below(), Blocks.STONE.defaultBlockState());
         helper.setBlock(repeaterRel.below(), Blocks.STONE.defaultBlockState());
-        helper.setBlock(wireRel, PRContent.MULTIPART.defaultBlockState());
+        helper.setBlock(sourceRel, Blocks.REDSTONE_BLOCK.defaultBlockState());
         helper.setBlock(
                 repeaterRel,
                 Blocks.REPEATER.defaultBlockState()
                         .setValue(RepeaterBlock.FACING, Direction.EAST)
                         .setValue(RepeaterBlock.POWERED, true)
         );
+        helper.setBlock(wireRel, PRContent.MULTIPART.defaultBlockState());
 
         MultipartBlockEntity multipart = multipart(helper, wireRel);
         WirePart wire = new WirePart(
