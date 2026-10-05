@@ -682,7 +682,7 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
             boolean reflect
     ) {
         int onColor = ProjectRedColors.rgb(p.gateState & 15);
-        int offColor = 0x000000;
+        int offColor = ProjectRedColors.rgb(15);
 
         if (p.gateShape == 0) {
             sevenSegment(
