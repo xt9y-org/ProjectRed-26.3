@@ -1088,6 +1088,49 @@ public final class MultipartBlockEntity extends BlockEntity {
                 && Direction.values()[wire.slot()] == direction;
     }
 
+    public int visualArrayTopConnections(GatePart receiver) {
+        if (level == null || !receiver.isArrayCell()) return 0;
+
+        Direction attachment = Direction.values()[receiver.slot()];
+        int mask = 0;
+
+        // ProjectRed array cells expose their raised redwire channel on
+        // internal sides 1 and 3 at render height 10.0. Render connections
+        // are straight gate-to-gate links only.
+        for (int local : new int[] {1, 3}) {
+            Direction direction = localToWorld(
+                    attachment,
+                    receiver.rotation(),
+                    local
+            );
+            BlockEntity neighbor = level.getBlockEntity(
+                    worldPosition.relative(direction)
+            );
+            if (!(neighbor instanceof MultipartBlockEntity multipart)) {
+                continue;
+            }
+
+            Part part = multipart.part(attachment.ordinal());
+            if (!(part instanceof GatePart other) || !other.isArrayCell()) {
+                continue;
+            }
+
+            Direction toward = direction.getOpposite();
+            for (int otherLocal : new int[] {1, 3}) {
+                if (localToWorld(
+                        attachment,
+                        other.rotation(),
+                        otherLocal
+                ) == toward) {
+                    mask |= 1 << local;
+                    break;
+                }
+            }
+        }
+
+        return mask;
+    }
+
     public int visualWireConnections(WirePart receiver) {
         if (level == null) return 0;
 
