@@ -293,7 +293,11 @@ final class RenderGeometry {
             boolean reflect,
             float surfaceDepth
     ) {
-        float depth = surfaceDepth + (border ? .0010F : .0025F);
+        // ProjectRed defaults logicwires3D=true. The legacy renderer builds
+        // one 0.01-high border prism and one 0.02-high conductor prism for
+        // every rectangulated 32x32 wire-mask rectangle.
+        float height = border ? .01F : .02F;
+        float edgeInset = .0004F - height / 50.0F;
 
         for (int wire = 0; wire < count; wire++) {
             if ((selectedMask & (1 << wire)) == 0) continue;
@@ -310,8 +314,6 @@ final class RenderGeometry {
                 int w = GateWireMasks.width(packed);
                 int h = GateWireMasks.height(packed);
 
-                if (reflect) x = 32 - x - w;
-
                 if (border) {
                     int x0 = Math.max(0, x - 2);
                     int y0 = Math.max(0, y - 2);
@@ -323,17 +325,23 @@ final class RenderGeometry {
                     h = y1 - y0;
                 }
 
-                surfaceRect(
-                        c,
-                        pose,
-                        light,
-                        attachment,
-                        rotation,
-                        x / 32.0F,
-                        y / 32.0F,
-                        (x + w) / 32.0F,
-                        (y + h) / 32.0F,
-                        depth
+                if (reflect) x = 32 - x - w;
+
+                float x0 = x / 32.0F + edgeInset;
+                float z0 = y / 32.0F + edgeInset;
+                float x1 = (x + w) / 32.0F - edgeInset;
+                float z1 = (y + h) / 32.0F - edgeInset;
+
+                gateComponentBox(
+                        c, pose, light,
+                        attachment, rotation,
+                        (x0 + x1) * .5F,
+                        (z0 + z1) * .5F,
+                        Math.max(.0001F, x1 - x0),
+                        Math.max(.0001F, z1 - z0),
+                        surfaceDepth,
+                        height,
+                        false
                 );
             }
         }
