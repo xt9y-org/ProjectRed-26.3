@@ -1224,6 +1224,97 @@ public final class ProjectRedGameTests {
         });
     }
 
+    @GameTest(structure = EMPTY, maxTicks = 30)
+    public void sequencerTracksTheMinecraftWorldClock(GameTestHelper helper) {
+        BlockPos gateRel = new BlockPos(3, 2, 3);
+
+        helper.setBlock(gateRel.below(), Blocks.STONE.defaultBlockState());
+        helper.setBlock(gateRel, PRContent.MULTIPART.defaultBlockState());
+
+        MultipartBlockEntity multipart = multipart(helper, gateRel);
+        GatePart sequencer = new GatePart(
+                GateType.SEQUENCER,
+                Direction.DOWN.ordinal(),
+                0
+        );
+        helper.assertTrue(multipart.add(sequencer), "failed to add sequencer");
+
+        helper.runAfterDelay(3, () -> {
+            long clock = helper.getLevel().getDefaultClockTime();
+            int step = (int) (Math.floorMod(clock, 160L) / 40L);
+            helper.assertTrue(
+                    sequencer.state() >> 4 == 1 << step,
+                    "sequencer output must match the current ProjectRed 4-phase world-clock step"
+            );
+            helper.succeed();
+        });
+    }
+
+    @GameTest(structure = EMPTY, maxTicks = 30)
+    public void lightSensorMatchesVanillaSkyAndBlockLight(GameTestHelper helper) {
+        BlockPos gateRel = new BlockPos(3, 2, 3);
+
+        helper.setBlock(gateRel.below(), Blocks.STONE.defaultBlockState());
+        helper.setBlock(gateRel, PRContent.MULTIPART.defaultBlockState());
+
+        MultipartBlockEntity multipart = multipart(helper, gateRel);
+        GatePart sensor = new GatePart(
+                GateType.LIGHT_SENSOR,
+                Direction.DOWN.ordinal(),
+                0
+        );
+        helper.assertTrue(multipart.add(sensor), "failed to add light sensor");
+
+        helper.runAfterDelay(3, () -> {
+            BlockPos absolute = helper.absolutePos(gateRel);
+            int sky = helper.getLevel().getBrightness(
+                    net.minecraft.world.level.LightLayer.SKY,
+                    absolute
+            ) - helper.getLevel().getSkyDarken();
+            int block = helper.getLevel().getBrightness(
+                    net.minecraft.world.level.LightLayer.BLOCK,
+                    absolute
+            );
+            int expected = Math.max(0, Math.min(15, Math.max(sky, block)));
+
+            helper.assertTrue(
+                    sensor.outputLocal(2) == expected,
+                    "ProjectRed light sensor must expose the same analog level as vanilla lighting"
+            );
+            helper.succeed();
+        });
+    }
+
+    @GameTest(structure = EMPTY, maxTicks = 30)
+    public void rainSensorTracksActualRainAndSkyVisibility(GameTestHelper helper) {
+        BlockPos gateRel = new BlockPos(3, 2, 3);
+
+        helper.setBlock(gateRel.below(), Blocks.STONE.defaultBlockState());
+        helper.setBlock(gateRel, PRContent.MULTIPART.defaultBlockState());
+
+        MultipartBlockEntity multipart = multipart(helper, gateRel);
+        GatePart sensor = new GatePart(
+                GateType.RAIN_SENSOR,
+                Direction.DOWN.ordinal(),
+                0
+        );
+        helper.assertTrue(multipart.add(sensor), "failed to add rain sensor");
+
+        helper.runAfterDelay(3, () -> {
+            BlockPos absolute = helper.absolutePos(gateRel);
+            int expected = helper.getLevel().isRaining()
+                    && helper.getLevel().canSeeSky(absolute)
+                    ? 15
+                    : 0;
+
+            helper.assertTrue(
+                    sensor.outputLocal(2) == expected,
+                    "ProjectRed rain sensor must follow vanilla rain and sky visibility"
+            );
+            helper.succeed();
+        });
+    }
+
     private static Rig line(
             GameTestHelper helper,
             String firstId,
