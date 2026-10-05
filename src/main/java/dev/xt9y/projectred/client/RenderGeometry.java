@@ -726,6 +726,117 @@ final class RenderGeometry {
         if ((bits & 0x80) != 0) surfaceRect(c,pose,light,attachment,rotation,u1-t*1.2F,v1-t*1.2F,u1,v1,.145F,rgb);
     }
 
+    static void gateInputButtons(
+            VertexConsumer c,
+            PoseStack.Pose pose,
+            int light,
+            Direction attachment,
+            int rotation,
+            int pressMask
+    ) {
+        // Exact legacy InputPanelButtonsModel layout:
+        // Cuboid6(3,1,3,13,3,13), split into 4x4 cells and contracted
+        // by 0.25/16 on X/Z. Pressed buttons use maxY=2.5/16.
+        final float start = 3.25F / 16.0F;
+        final float cell = 2.5F / 16.0F;
+        final float size = 2.0F / 16.0F;
+        final float y0 = 1.0F / 16.0F;
+
+        for (int bit = 0; bit < 16; bit++) {
+            int row = bit / 4;
+            int col = bit % 4;
+            float x0 = start + col * cell;
+            float z0 = start + row * cell;
+            float x1 = x0 + size;
+            float z1 = z0 + size;
+            float y1 = ((pressMask & 1 << bit) != 0 ? 2.5F : 3.0F) / 16.0F;
+            int rgb = net.minecraft.world.item.DyeColor.byId(bit)
+                    .getTextureDiffuseColor() & 0xFFFFFF;
+
+            gateComponentBoxColor(
+                    c, pose, light,
+                    attachment, rotation,
+                    (x0 + x1) * .5F,
+                    (z0 + z1) * .5F,
+                    x1 - x0,
+                    z1 - z0,
+                    y0,
+                    y1 - y0,
+                    false,
+                    rgb
+            );
+        }
+    }
+
+    private static void gateComponentBoxColor(
+            VertexConsumer c,
+            PoseStack.Pose pose,
+            int light,
+            Direction attachment,
+            int rotation,
+            float centerX,
+            float centerZ,
+            float width,
+            float depth,
+            float surfaceDepth,
+            float height,
+            boolean reflect,
+            int rgb
+    ) {
+        if (reflect) centerX = 1.0F - centerX;
+
+        float x0 = centerX - width * .5F;
+        float x1 = centerX + width * .5F;
+        float z0 = centerZ - depth * .5F;
+        float z1 = centerZ + depth * .5F;
+        float y0 = surfaceDepth;
+        float y1 = surfaceDepth + height;
+
+        float[] p000 = gatePoint(attachment, rotation, x0, y0, z0);
+        float[] p100 = gatePoint(attachment, rotation, x1, y0, z0);
+        float[] p110 = gatePoint(attachment, rotation, x1, y0, z1);
+        float[] p010 = gatePoint(attachment, rotation, x0, y0, z1);
+        float[] p001 = gatePoint(attachment, rotation, x0, y1, z0);
+        float[] p101 = gatePoint(attachment, rotation, x1, y1, z0);
+        float[] p111 = gatePoint(attachment, rotation, x1, y1, z1);
+        float[] p011 = gatePoint(attachment, rotation, x0, y1, z1);
+
+        Direction right = MultipartBlockEntity.localToWorld(attachment, rotation, 1);
+        Direction down = MultipartBlockEntity.localToWorld(attachment, rotation, 2);
+        Direction normal = attachment.getOpposite();
+
+        gateFaceColor(c,pose,light, normal, p001,p011,p111,p101,rgb);
+        gateFaceColor(c,pose,light, normal.getOpposite(), p000,p100,p110,p010,rgb);
+        gateFaceColor(c,pose,light, right, p100,p101,p111,p110,rgb);
+        gateFaceColor(c,pose,light, right.getOpposite(), p000,p010,p011,p001,rgb);
+        gateFaceColor(c,pose,light, down, p010,p110,p111,p011,rgb);
+        gateFaceColor(c,pose,light, down.getOpposite(), p000,p001,p101,p100,rgb);
+    }
+
+    private static void gateFaceColor(
+            VertexConsumer c,
+            PoseStack.Pose pose,
+            int light,
+            Direction normal,
+            float[] a,
+            float[] b,
+            float[] d,
+            float[] e,
+            int rgb
+    ) {
+        int r = rgb >> 16 & 0xFF;
+        int g = rgb >> 8 & 0xFF;
+        int bl = rgb & 0xFF;
+        float nx = normal.getStepX();
+        float ny = normal.getStepY();
+        float nz = normal.getStepZ();
+
+        vertexColor(c,pose,light,a[0],a[1],a[2],0,0,nx,ny,nz,r,g,bl);
+        vertexColor(c,pose,light,b[0],b[1],b[2],0,1,nx,ny,nz,r,g,bl);
+        vertexColor(c,pose,light,d[0],d[1],d[2],1,1,nx,ny,nz,r,g,bl);
+        vertexColor(c,pose,light,e[0],e[1],e[2],1,0,nx,ny,nz,r,g,bl);
+    }
+
     static void gatePanelLights(
             VertexConsumer c,
             PoseStack.Pose pose,
