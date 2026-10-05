@@ -62,6 +62,7 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
             WireFamily family,
             int color,
             boolean powered,
+            int wireSignal,
             int connections,
             GateType gateType,
             int gateShape,
@@ -113,6 +114,7 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
                         wire.spec().family(),
                         wire.spec().color(),
                         powered,
+                        wire.signal(),
                         blockEntity.visualWireConnections(wire),
                         null,
                         0, 0, 0, 0,
@@ -136,6 +138,7 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
                         null,
                         -1,
                         (gate.state() & 0xF0) != 0,
+                        0,
                         0,
                         gate.type(),
                         gate.shape(),
@@ -206,7 +209,8 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
                                 consumer,
                                 pose,
                                 state.lightCoords,
-                                part.connections
+                                part.connections,
+                                wireTint(part)
                         );
                     } else {
                         // Legacy RenderWire uses tw=(thickness+1)
@@ -230,7 +234,8 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
                                 Direction.values()[part.slot],
                                 width,
                                 depth,
-                                part.connections
+                                part.connections,
+                                wireTint(part)
                         );
                     }
                 }
@@ -1226,6 +1231,12 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
     private static int highestBit(int mask) {
         mask &= 0xFFFF;
         return mask == 0 ? 0 : 31 - Integer.numberOfLeadingZeros(mask);
+    }
+
+    private static int wireTint(Visual part) {
+        if (part.family != WireFamily.RED_ALLOY) return 0xFFFFFF;
+        int red = Math.min(255, Math.max(0, part.wireSignal) / 2 + 60);
+        return red << 16;
     }
 
     private static Identifier wireTexture(Visual part) {
