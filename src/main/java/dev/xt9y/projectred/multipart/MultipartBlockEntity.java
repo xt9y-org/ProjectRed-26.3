@@ -1132,9 +1132,21 @@ public final class MultipartBlockEntity extends BlockEntity {
     }
 
     public int visualWireConnections(WirePart receiver) {
+        return visualWireConnectionData(receiver) & 0x3F;
+    }
+
+    /**
+     * Compact renderer connection data. Bits 0..5 are all connected world
+     * directions, bits 6..11 are outer-corner connections, and bits 12..17
+     * are internal same-block connections. Straight external connections are
+     * the remaining connected bits.
+     */
+    public int visualWireConnectionData(WirePart receiver) {
         if (level == null) return 0;
 
-        int mask = 0;
+        int connectedMask = 0;
+        int cornerMask = 0;
+        int internalMask = 0;
         Direction attachment = receiver.center()
                 ? null
                 : Direction.values()[receiver.slot()];
@@ -1144,9 +1156,10 @@ public final class MultipartBlockEntity extends BlockEntity {
                 continue;
             }
 
-            boolean connected = receiver.center()
+            boolean internal = receiver.center()
                     ? hasCenterInsideWireConnection(receiver, direction)
                     : hasInsideWireConnection(receiver, direction);
+            boolean connected = internal;
 
             boolean externalOpen = attachment == null
                     || faceWireExternalOpen(receiver, direction);
@@ -1159,22 +1172,30 @@ public final class MultipartBlockEntity extends BlockEntity {
                 );
             }
 
+            boolean corner = false;
             if (!connected
                     && attachment != null
                     && externalOpen
                     && outsideCornerEdgeOpen(direction, attachment)) {
-                connected = hasCornerWireConnection(
+                corner = hasCornerWireConnection(
                         receiver,
                         direction,
                         attachment
                 );
+                connected = corner;
             }
 
             if (connected) {
-                mask |= 1 << direction.ordinal();
+                int bit = 1 << direction.ordinal();
+                connectedMask |= bit;
+                if (internal) internalMask |= bit;
+                if (corner) cornerMask |= bit;
             }
         }
-        return mask;
+
+        return connectedMask
+                | (cornerMask << 6)
+                | (internalMask << 12);
     }
 
     private boolean faceWireExternalOpen(
