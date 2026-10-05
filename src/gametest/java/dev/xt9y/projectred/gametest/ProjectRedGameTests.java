@@ -1681,6 +1681,67 @@ public final class ProjectRedGameTests {
         });
     }
 
+    @GameTest(structure = EMPTY, maxTicks = 80)
+    public void transparentLatchCellHoldsUntilItsRedwireTrackReturns(GameTestHelper helper) {
+        BlockPos cellRel = new BlockPos(3, 2, 3);
+
+        helper.setBlock(cellRel.below(), Blocks.STONE.defaultBlockState());
+        helper.setBlock(cellRel.east(), Blocks.REDSTONE_BLOCK.defaultBlockState());
+        helper.setBlock(cellRel.south(), Blocks.REDSTONE_BLOCK.defaultBlockState());
+        helper.setBlock(cellRel, PRContent.MULTIPART.defaultBlockState());
+
+        MultipartBlockEntity multipart = multipart(helper, cellRel);
+        GatePart cell = new GatePart(
+                GateType.TRANSPARENT_LATCH_CELL,
+                Direction.DOWN.ordinal(),
+                0
+        );
+        helper.assertTrue(
+                multipart.add(cell),
+                "failed to add transparent latch cell"
+        );
+
+        multipart.onNeighborSignalChanged();
+
+        helper.runAfterDelay(3, () -> {
+            helper.assertTrue(
+                    multipart.vanillaSignal(Direction.NORTH) == 15,
+                    "enabled transparent latch cell must copy its high digital input"
+            );
+
+            // Drop the redwire track first. Upstream holds the existing output
+            // whenever the 0xA redwire mask is inactive.
+            helper.setBlock(cellRel.east(), Blocks.AIR.defaultBlockState());
+            multipart.onNeighborSignalChanged();
+
+            helper.runAfterDelay(6, () -> {
+                helper.setBlock(cellRel.south(), Blocks.AIR.defaultBlockState());
+                multipart.onNeighborSignalChanged();
+
+                helper.runAfterDelay(9, () -> {
+                    helper.assertTrue(
+                            multipart.vanillaSignal(Direction.NORTH) == 15,
+                            "transparent latch cell must hold while its redwire track is inactive"
+                    );
+
+                    helper.setBlock(
+                            cellRel.east(),
+                            Blocks.REDSTONE_BLOCK.defaultBlockState()
+                    );
+                    multipart.onNeighborSignalChanged();
+
+                    helper.runAfterDelay(12, () -> {
+                        helper.assertTrue(
+                                multipart.vanillaSignal(Direction.NORTH) == 0,
+                                "restoring the redwire track must resume tracking the low digital input"
+                        );
+                        helper.succeed();
+                    });
+                });
+            });
+        });
+    }
+
     private static Rig line(
             GameTestHelper helper,
             String firstId,
