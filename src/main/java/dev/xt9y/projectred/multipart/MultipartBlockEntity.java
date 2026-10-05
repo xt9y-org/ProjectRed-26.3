@@ -125,8 +125,7 @@ public final class MultipartBlockEntity extends BlockEntity {
 
         ArrayDeque<BlockPos> queue = new ArrayDeque<>();
         Set<Long> queued = new HashSet<>();
-
-        enqueuePropagationNeighborhood(queue, queued, worldPosition);
+        enqueuePropagationTargets(queue, queued, this);
 
         int operations = 0;
         final int maxOperations = 65_536;
@@ -153,7 +152,7 @@ public final class MultipartBlockEntity extends BlockEntity {
             if (!localChanged) continue;
 
             multipart.syncChanged();
-            enqueuePropagationNeighborhood(queue, queued, pos);
+            enqueuePropagationTargets(queue, queued, multipart);
         }
 
         if (operations >= maxOperations) {
@@ -164,31 +163,95 @@ public final class MultipartBlockEntity extends BlockEntity {
         }
     }
 
-    private static void enqueuePropagationNeighborhood(
+    private void enqueuePropagationTargets(
             ArrayDeque<BlockPos> queue,
             Set<Long> queued,
-            BlockPos center
+            MultipartBlockEntity multipart
     ) {
-        // Straight connections plus ProjectRed outer-corner wrapping all fit
-        // inside the surrounding 3x3x3 cube. Queueing that compact
-        // neighborhood keeps the algorithm topology-independent while the
-        // actual wire recomputation still enforces connection rules.
-        for (int dx = -1; dx <= 1; dx++) {
-            for (int dy = -1; dy <= 1; dy++) {
-                for (int dz = -1; dz <= 1; dz++) {
-                    if (dx == 0 && dy == 0 && dz == 0) continue;
-                    if (Math.abs(dx) + Math.abs(dy) + Math.abs(dz) > 2) continue;
+        enqueueMultipart(queue, queued, multipart.worldPosition);
 
-                    BlockPos pos = center.offset(dx, dy, dz);
-                    if (queued.add(pos.asLong())) {
-                        queue.addLast(pos);
-                    }
-                }
+        for (Part part : multipart.parts()) {
+            if (part instanceof WirePart wire) {
+                enqueueWireTargets(queue, queued, multipart, wire);
+            } else if (part instanceof GatePart gate) {
+                enqueueGateTargets(queue, queued, multipart, gate);
             }
         }
+    }
 
-        if (queued.add(center.asLong())) {
-            queue.addLast(center);
+    private void enqueueWireTargets(
+            ArrayDeque<BlockPos> queue,
+            Set<Long> queued,
+            MultipartBlockEntity multipart,
+            WirePart wire
+    ) {
+        int connections = multipart.visualWireConnections(wire);
+        Direction attachment = wire.center()
+                ? null
+                : Direction.values()[wire.slot()];
+
+        for (Direction direction : Direction.values()) {
+            if ((connections & (1 << direction.ordinal())) == 0) continue;
+
+            BlockPos straight = multipart.worldPosition.relative(direction);
+            enqueueMultipart(queue, queued, straight);
+
+            if (attachment != null
+                    && direction.getAxis() != attachment.getAxis()
+                    && multipart.outsideCornerEdgeOpen(direction, attachment)) {
+                enqueueMultipart(
+                        queue,
+                        queued,
+                        straight.relative(attachment)
+                );
+            }
+        }
+    }
+
+    private void enqueueGateTargets(
+            ArrayDeque<BlockPos> queue,
+            Set<Long> queued,
+            MultipartBlockEntity multipart,
+            GatePart gate
+    ) {
+        Direction attachment = Direction.values()[gate.slot()];
+
+        for (int local = 0; local < 4; local++) {
+            if (!gate.canConnectRedstoneLocal(local)
+                    && !gate.canConnectBundledLocal(local)) {
+                continue;
+            }
+
+            Direction direction = localToWorld(
+                    attachment,
+                    gate.rotation(),
+                    local
+            );
+            BlockPos straight = multipart.worldPosition.relative(direction);
+            enqueueMultipart(queue, queued, straight);
+
+            if (multipart.outsideCornerEdgeOpen(direction, attachment)) {
+                enqueueMultipart(
+                        queue,
+                        queued,
+                        straight.relative(attachment)
+                );
+            }
+        }
+    }
+
+    private void enqueueMultipart(
+            ArrayDeque<BlockPos> queue,
+            Set<Long> queued,
+            BlockPos pos
+    ) {
+        if (!(level.getBlockEntity(pos) instanceof MultipartBlockEntity)) {
+            return;
+        }
+
+        long key = pos.asLong();
+        if (queued.add(key)) {
+            queue.addLast(pos);
         }
     }
 
