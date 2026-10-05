@@ -18,7 +18,6 @@ import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.Identifier;
-import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 
@@ -682,8 +681,7 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
             Direction attachment,
             boolean reflect
     ) {
-        int onColor = DyeColor.byId(p.gateState & 15)
-                .getTextureDiffuseColor() & 0xFFFFFF;
+        int onColor = ProjectRedColors.rgb(p.gateState & 15);
         int offColor = 0x000000;
 
         if (p.gateShape == 0) {
