@@ -917,7 +917,7 @@ public final class GatePart extends Part {
                 int right = state2 >> 12 & 0xF;
                 int side = Math.max(left, right);
                 int out = shape == 0
-                        ? (back > side ? back : 0)
+                        ? (back >= side ? back : 0)
                         : Math.max(back - side, 0);
                 if (out != oldOut) {
                     state2 = (state2 & 0xFFF0) | out;
