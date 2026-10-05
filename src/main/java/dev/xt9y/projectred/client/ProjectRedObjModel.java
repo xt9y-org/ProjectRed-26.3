@@ -20,6 +20,7 @@ final class ProjectRedObjModel {
     private record Face(String group, Ref[] refs) {}
 
     private static final Map<String, ProjectRedObjModel> CACHE = new ConcurrentHashMap<>();
+    private static final int[] REORIENT_SIDE = {0, 3, 3, 0, 0, 3};
 
     private final float[][] positions;
     private final float[][] uvs;
@@ -79,7 +80,7 @@ final class ProjectRedObjModel {
         renderFiltered(
                 consumer, pose, light, attachment, rotation,
                 offsetX, offsetY, offsetZ, scaleXZ, angleY, reflect,
-                rgb, null, true
+                rgb, null, true, 0.0F, 0.0F, false, false
         );
     }
 
@@ -101,7 +102,7 @@ final class ProjectRedObjModel {
         renderFiltered(
                 consumer, pose, light, attachment, rotation,
                 offsetX, offsetY, offsetZ, scaleXZ, angleY, reflect,
-                rgb, group, true
+                rgb, group, true, 0.0F, 0.0F, false, false
         );
     }
 
@@ -123,7 +124,40 @@ final class ProjectRedObjModel {
         renderFiltered(
                 consumer, pose, light, attachment, rotation,
                 offsetX, offsetY, offsetZ, scaleXZ, angleY, reflect,
-                rgb, group, false
+                rgb, group, false, 0.0F, 0.0F, false, false
+        );
+    }
+
+    void renderBundledCable(
+            VertexConsumer consumer,
+            PoseStack.Pose pose,
+            int light,
+            Direction attachment,
+            int rotation,
+            float offsetX,
+            float offsetY,
+            float offsetZ,
+            boolean reflect,
+            int rgb,
+            float uCenter,
+            float vCenter
+    ) {
+        int side = attachment.ordinal();
+        boolean rotateUv = Math.floorMod(
+                rotation + REORIENT_SIDE[side],
+                4
+        ) >= 2;
+
+        // ComponentModelBakery.bundledCablePrecomputed applies an X
+        // reflection first, then a 180-degree UV rotation.
+        boolean flipU = reflect ^ rotateUv;
+        boolean flipV = rotateUv;
+
+        renderFiltered(
+                consumer, pose, light, attachment, rotation,
+                offsetX, offsetY, offsetZ, 1.0F, 0.0F, reflect,
+                rgb, null, true,
+                uCenter, vCenter, flipU, flipV
         );
     }
 
@@ -141,7 +175,11 @@ final class ProjectRedObjModel {
             boolean reflect,
             int rgb,
             String group,
-            boolean invertModelX
+            boolean invertModelX,
+            float uvCenterU,
+            float uvCenterV,
+            boolean flipU,
+            boolean flipV
     ) {
         Direction right = MultipartBlockEntity.localToWorld(attachment, rotation, 1);
         Direction down = MultipartBlockEntity.localToWorld(attachment, rotation, 2);
@@ -166,7 +204,8 @@ final class ProjectRedObjModel {
                         right, down, normal,
                         originX, originY, originZ,
                         offsetX, offsetY, offsetZ,
-                        scaleXZ, cos, sin, reflect, rgb, invertModelX
+                        scaleXZ, cos, sin, reflect, rgb, invertModelX,
+                        uvCenterU, uvCenterV, flipU, flipV
                 );
                 emit(
                         consumer, pose, light,
@@ -174,7 +213,8 @@ final class ProjectRedObjModel {
                         right, down, normal,
                         originX, originY, originZ,
                         offsetX, offsetY, offsetZ,
-                        scaleXZ, cos, sin, reflect, rgb, invertModelX
+                        scaleXZ, cos, sin, reflect, rgb, invertModelX,
+                        uvCenterU, uvCenterV, flipU, flipV
                 );
                 continue;
             }
@@ -190,7 +230,8 @@ final class ProjectRedObjModel {
                         right,down,normal,
                         originX,originY,originZ,
                         offsetX,offsetY,offsetZ,
-                        scaleXZ,cos,sin,reflect,rgb,invertModelX
+                        scaleXZ,cos,sin,reflect,rgb,invertModelX,
+                        uvCenterU,uvCenterV,flipU,flipV
                 );
                 emit(
                         consumer, pose, light,
@@ -198,7 +239,8 @@ final class ProjectRedObjModel {
                         right,down,normal,
                         originX,originY,originZ,
                         offsetX,offsetY,offsetZ,
-                        scaleXZ,cos,sin,reflect,rgb,invertModelX
+                        scaleXZ,cos,sin,reflect,rgb,invertModelX,
+                        uvCenterU,uvCenterV,flipU,flipV
                 );
             }
         }
@@ -226,9 +268,13 @@ final class ProjectRedObjModel {
             float sin,
             boolean reflect,
             int rgb,
-            boolean invertModelX
+            boolean invertModelX,
+            float uvCenterU,
+            float uvCenterV,
+            boolean flipU,
+            boolean flipV
     ) {
-        vertex(consumer,pose,light,a,right,down,normal,originX,originY,originZ,offsetX,offsetY,offsetZ,scaleXZ,cos,sin,reflect,rgb,invertModelX);
+        vertex(consumer,pose,light,a,right,down,normal,originX,originY,originZ,offsetX,offsetY,offsetZ,scaleXZ,cos,sin,reflect,rgb,invertModelX,uvCenterU,uvCenterV,flipU,flipV);
         vertex(consumer,pose,light,b,right,down,normal,originX,originY,originZ,offsetX,offsetY,offsetZ,scaleXZ,cos,sin,reflect,rgb,invertModelX);
         vertex(consumer,pose,light,c,right,down,normal,originX,originY,originZ,offsetX,offsetY,offsetZ,scaleXZ,cos,sin,reflect,rgb,invertModelX);
         vertex(consumer,pose,light,d,right,down,normal,originX,originY,originZ,offsetX,offsetY,offsetZ,scaleXZ,cos,sin,reflect,rgb,invertModelX);
@@ -253,7 +299,11 @@ final class ProjectRedObjModel {
             float sin,
             boolean reflect,
             int rgb,
-            boolean invertModelX
+            boolean invertModelX,
+            float uvCenterU,
+            float uvCenterV,
+            boolean flipU,
+            boolean flipV
     ) {
         float[] source = positions[ref.position];
         float x = (invertModelX ? -source[0] : source[0]) * scaleXZ;
@@ -312,6 +362,9 @@ final class ProjectRedObjModel {
         if (ref.uv >= 0 && ref.uv < uvs.length) {
             u = uvs[ref.uv][0];
             v = 1.0F - uvs[ref.uv][1];
+
+            if (flipU) u = 2.0F * uvCenterU - u;
+            if (flipV) v = 2.0F * uvCenterV - v;
         }
 
         consumer.addVertex(pose,wx,wy,wz)
