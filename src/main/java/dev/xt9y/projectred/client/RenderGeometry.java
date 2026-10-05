@@ -55,12 +55,12 @@ final class RenderGeometry {
             Direction attachment
     ) {
         switch (attachment) {
-            case DOWN -> box(c, pose, light, .0625F,0,.0625F, .9375F,.125F,.9375F);
-            case UP -> box(c, pose, light, .0625F,.875F,.0625F, .9375F,1,.9375F);
-            case NORTH -> box(c, pose, light, .0625F,.0625F,0, .9375F,.9375F,.125F);
-            case SOUTH -> box(c, pose, light, .0625F,.0625F,.875F, .9375F,.9375F,1);
-            case WEST -> box(c, pose, light, 0,.0625F,.0625F, .125F,.9375F,.9375F);
-            case EAST -> box(c, pose, light, .875F,.0625F,.0625F, 1,.9375F,.9375F);
+            case DOWN -> box(c, pose, light, 0,0,0, 1,.125F,1);
+            case UP -> box(c, pose, light, 0,.875F,0, 1,1,1);
+            case NORTH -> box(c, pose, light, 0,0,0, 1,1,.125F);
+            case SOUTH -> box(c, pose, light, 0,0,.875F, 1,1,1);
+            case WEST -> box(c, pose, light, 0,0,0, .125F,1,1);
+            case EAST -> box(c, pose, light, .875F,0,0, 1,1,1);
         }
     }
 
@@ -278,6 +278,227 @@ final class RenderGeometry {
             Direction attachment
     ) {
         facePart(c, pose, light, attachment, .16F, .14F);
+    }
+
+    static void gateWireMask(
+            VertexConsumer c,
+            PoseStack.Pose pose,
+            int light,
+            Direction attachment,
+            int rotation,
+            String family,
+            int count,
+            int selectedMask,
+            boolean border,
+            boolean reflect,
+            float surfaceDepth
+    ) {
+        float depth = surfaceDepth + (border ? .0010F : .0025F);
+
+        for (int wire = 0; wire < count; wire++) {
+            if ((selectedMask & (1 << wire)) == 0) continue;
+
+            int maskIndex = GateWireMasks.maskIndex(family + "-" + wire);
+            if (maskIndex < 0) continue;
+
+            for (int i = GateWireMasks.start(maskIndex);
+                    i < GateWireMasks.end(maskIndex);
+                    i++) {
+                int packed = GateWireMasks.packed(i);
+                int x = GateWireMasks.x(packed);
+                int y = GateWireMasks.y(packed);
+                int w = GateWireMasks.width(packed);
+                int h = GateWireMasks.height(packed);
+
+                if (reflect) x = 32 - x - w;
+
+                if (border) {
+                    int x0 = Math.max(0, x - 2);
+                    int y0 = Math.max(0, y - 2);
+                    int x1 = Math.min(32, x + w + 2);
+                    int y1 = Math.min(32, y + h + 2);
+                    x = x0;
+                    y = y0;
+                    w = x1 - x0;
+                    h = y1 - y0;
+                }
+
+                surfaceRect(
+                        c,
+                        pose,
+                        light,
+                        attachment,
+                        rotation,
+                        x / 32.0F,
+                        y / 32.0F,
+                        (x + w) / 32.0F,
+                        (y + h) / 32.0F,
+                        depth
+                );
+            }
+        }
+    }
+
+    static void gateComponentBox(
+            VertexConsumer c,
+            PoseStack.Pose pose,
+            int light,
+            Direction attachment,
+            int rotation,
+            float centerX,
+            float centerZ,
+            float width,
+            float depth,
+            float surfaceDepth,
+            float height,
+            boolean reflect
+    ) {
+        if (reflect) centerX = 1.0F - centerX;
+
+        float x0 = centerX - width * .5F;
+        float x1 = centerX + width * .5F;
+        float z0 = centerZ - depth * .5F;
+        float z1 = centerZ + depth * .5F;
+        float y0 = surfaceDepth;
+        float y1 = surfaceDepth + height;
+
+        float[] p000 = gatePoint(attachment, rotation, x0, y0, z0);
+        float[] p100 = gatePoint(attachment, rotation, x1, y0, z0);
+        float[] p110 = gatePoint(attachment, rotation, x1, y0, z1);
+        float[] p010 = gatePoint(attachment, rotation, x0, y0, z1);
+        float[] p001 = gatePoint(attachment, rotation, x0, y1, z0);
+        float[] p101 = gatePoint(attachment, rotation, x1, y1, z0);
+        float[] p111 = gatePoint(attachment, rotation, x1, y1, z1);
+        float[] p011 = gatePoint(attachment, rotation, x0, y1, z1);
+
+        Direction right = MultipartBlockEntity.localToWorld(attachment, rotation, 1);
+        Direction down = MultipartBlockEntity.localToWorld(attachment, rotation, 2);
+        Direction normal = attachment.getOpposite();
+
+        gateFace(c,pose,light, normal, p001,p011,p111,p101);
+        gateFace(c,pose,light, normal.getOpposite(), p000,p100,p110,p010);
+        gateFace(c,pose,light, right, p100,p101,p111,p110);
+        gateFace(c,pose,light, right.getOpposite(), p000,p010,p011,p001);
+        gateFace(c,pose,light, down, p010,p110,p111,p011);
+        gateFace(c,pose,light, down.getOpposite(), p000,p001,p101,p100);
+    }
+
+    static void gateTorch(
+            VertexConsumer c,
+            PoseStack.Pose pose,
+            int light,
+            Direction attachment,
+            int rotation,
+            float x,
+            float z,
+            int heightPixels,
+            boolean reflect
+    ) {
+        gateComponentBox(
+                c, pose, light, attachment, rotation,
+                x / 16.0F,
+                z / 16.0F,
+                .125F,
+                .125F,
+                .125F,
+                Math.max(.125F, (heightPixels - 1) / 16.0F),
+                reflect
+        );
+    }
+
+    static void gateChip(
+            VertexConsumer c,
+            PoseStack.Pose pose,
+            int light,
+            Direction attachment,
+            int rotation,
+            float x,
+            float z,
+            boolean reflect
+    ) {
+        gateComponentBox(
+                c, pose, light, attachment, rotation,
+                x / 16.0F,
+                z / 16.0F,
+                .21875F,
+                .21875F,
+                .125F,
+                .09125F,
+                reflect
+        );
+    }
+
+    static void gateLever(
+            VertexConsumer c,
+            PoseStack.Pose pose,
+            int light,
+            Direction attachment,
+            int rotation,
+            float x,
+            float z,
+            boolean on,
+            boolean reflect
+    ) {
+        float cx = x / 16.0F;
+        float cz = z / 16.0F;
+        gateComponentBox(
+                c, pose, light, attachment, rotation,
+                cx, cz, .25F, .50F, .125F, .125F, reflect
+        );
+        gateComponentBox(
+                c, pose, light, attachment, rotation,
+                cx,
+                cz + (on ? -.055F : .055F),
+                .125F,
+                .28F,
+                .25F,
+                .22F,
+                reflect
+        );
+    }
+
+    private static float[] gatePoint(
+            Direction attachment,
+            int rotation,
+            float x,
+            float y,
+            float z
+    ) {
+        Direction right = MultipartBlockEntity.localToWorld(attachment, rotation, 1);
+        Direction down = MultipartBlockEntity.localToWorld(attachment, rotation, 2);
+        Direction normal = attachment.getOpposite();
+
+        float ox = .5F + attachment.getStepX() * .5F;
+        float oy = .5F + attachment.getStepY() * .5F;
+        float oz = .5F + attachment.getStepZ() * .5F;
+        float dx = x - .5F;
+        float dz = z - .5F;
+
+        return new float[] {
+                ox + right.getStepX() * dx + down.getStepX() * dz + normal.getStepX() * y,
+                oy + right.getStepY() * dx + down.getStepY() * dz + normal.getStepY() * y,
+                oz + right.getStepZ() * dx + down.getStepZ() * dz + normal.getStepZ() * y
+        };
+    }
+
+    private static void gateFace(
+            VertexConsumer c,
+            PoseStack.Pose pose,
+            int light,
+            Direction normal,
+            float[] a,
+            float[] b,
+            float[] d,
+            float[] e
+    ) {
+        face(
+                c, pose, light,
+                normal.getStepX(), normal.getStepY(), normal.getStepZ(),
+                a[0],a[1],a[2],0,0,
+                b[0],b[1],b[2],0,1,
+                d[0],d[1],d[2],1,1,
+                e[0],e[1],e[2],1,0
+        );
     }
 
     static void wireFace(
