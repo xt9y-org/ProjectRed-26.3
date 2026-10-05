@@ -576,6 +576,43 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
         }
     }
 
+    private static void submitGateBase(
+            State state,
+            PoseStack poseStack,
+            SubmitNodeCollector collector,
+            int[] order,
+            Visual p,
+            Direction attachment,
+            boolean reflect
+    ) {
+        switch (p.gateType) {
+            case NULL_CELL -> mesh(
+                    state, poseStack, collector, order, p, attachment,
+                    "array/nullcellbase",
+                    .5F, 0.0F, .5F,
+                    1.0F, 0.0F,
+                    arrayCellBase(p.gateType),
+                    reflect
+            );
+            case INVERT_CELL, BUFFER_CELL -> mesh(
+                    state, poseStack, collector, order, p, attachment,
+                    "array/extendedcellbase",
+                    .5F, 0.0F, .5F,
+                    1.0F, 0.0F,
+                    arrayCellBase(p.gateType),
+                    reflect
+            );
+            default -> mesh(
+                    state, poseStack, collector, order, p, attachment,
+                    "base",
+                    .5F, 0.0F, .5F,
+                    1.0F, 0.0F,
+                    GATE_BASE,
+                    reflect
+            );
+        }
+    }
+
     private static void pointer(
             State state,
             PoseStack poseStack,
@@ -586,19 +623,29 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
             float surfaceDepth
     ) {
         if (Float.isNaN(p.pointerAngle)) return;
-        collector.order(order[0]++).submitCustomGeometry(
-                poseStack,
-                RenderTypes.entityCutout(POINTER),
-                (pose, consumer) -> RenderGeometry.gatePointer(
-                        consumer,
-                        pose,
-                        state.lightCoords,
-                        attachment,
-                        p.gateRotation,
-                        surfaceDepth + .007F,
-                        p.pointerAngle,
-                        p.pointerOffset
-                )
+
+        float x = .5F;
+        float z = .5F;
+        float scale = 1.0F;
+        boolean reflect = p.gateShape == 1
+                && (p.gateType == GateType.COUNTER
+                || p.gateType == GateType.STATE_CELL);
+
+        if (p.gateType == GateType.COUNTER) {
+            x = 11.0F / 16.0F;
+            scale = 1.2F;
+        } else if (p.gateType == GateType.STATE_CELL) {
+            x = 13.0F / 16.0F;
+        }
+
+        mesh(
+                state, poseStack, collector, order, p, attachment,
+                "pointer",
+                x, 7.0F / 16.0F, z,
+                scale,
+                -(p.pointerAngle) + (float) Math.PI,
+                POINTER,
+                reflect
         );
     }
 
@@ -640,14 +687,13 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
             Identifier onTexture,
             boolean reflect
     ) {
-        collector.order(order[0]++).submitCustomGeometry(
-                poseStack,
-                RenderTypes.entityCutout(on ? onTexture : offTexture),
-                (pose, consumer) -> RenderGeometry.gateChip(
-                        consumer, pose, state.lightCoords,
-                        attachment, p.gateRotation,
-                        x, z, reflect
-                )
+        mesh(
+                state, poseStack, collector, order, p, attachment,
+                "chip",
+                x / 16.0F, 0.0F, z / 16.0F,
+                1.0F, 0.0F,
+                on ? onTexture : offTexture,
+                reflect
         );
     }
 
@@ -663,14 +709,13 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
             boolean on,
             boolean reflect
     ) {
-        collector.order(order[0]++).submitCustomGeometry(
-                poseStack,
-                RenderTypes.entityCutout(LEVER),
-                (pose, consumer) -> RenderGeometry.gateLever(
-                        consumer, pose, state.lightCoords,
-                        attachment, p.gateRotation,
-                        x, z, on, reflect
-                )
+        mesh(
+                state, poseStack, collector, order, p, attachment,
+                on ? "leveron" : "leveroff",
+                x / 16.0F, 2.0F / 16.0F, z / 16.0F,
+                1.0F, 0.0F,
+                LEVER,
+                reflect
         );
     }
 
@@ -681,14 +726,19 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
             int[] order,
             Visual p,
             Direction attachment,
+            String model,
             float x,
             float z,
             Identifier texture,
             boolean reflect
     ) {
-        component(
-                state,poseStack,collector,order,p,attachment,
-                x,z,.42F,.34F,.07F,texture,reflect
+        mesh(
+                state, poseStack, collector, order, p, attachment,
+                model,
+                x / 16.0F, 0.0F, z / 16.0F,
+                1.0F, 0.0F,
+                texture,
+                reflect
         );
     }
 
@@ -731,18 +781,171 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
             boolean reflect,
             float centerX
     ) {
+        Identifier texture = arrayCellBase(p.gateType);
+
+        switch (p.gateType) {
+            case NULL_CELL -> {
+                meshTinted(
+                        state,poseStack,collector,order,p,attachment,
+                        "array/nullcellbottomwire",.5F,0,.5F,1,0,
+                        texture,reflect,signalColor(p.arraySignalA)
+                );
+                meshTinted(
+                        state,poseStack,collector,order,p,attachment,
+                        "array/nullcelltopwire",.5F,0,.5F,1,0,
+                        texture,reflect,signalColor(p.arraySignalB)
+                );
+                mesh(
+                        state,poseStack,collector,order,p,attachment,
+                        "array/cellstand",.5F,0,.5F,1,0,
+                        texture,reflect
+                );
+            }
+            case INVERT_CELL, BUFFER_CELL -> {
+                meshTinted(
+                        state,poseStack,collector,order,p,attachment,
+                        "array/extendedcellbottomwire",.5F,0,.5F,1,0,
+                        texture,reflect,signalColor(p.arraySignalA)
+                );
+                meshTinted(
+                        state,poseStack,collector,order,p,attachment,
+                        "array/extendedcelltopwire",.5F,0,.5F,1,0,
+                        texture,reflect,signalColor(p.arraySignalB)
+                );
+                mesh(
+                        state,poseStack,collector,order,p,attachment,
+                        "array/cellstand",.5F,0,.5F,1,0,
+                        texture,reflect
+                );
+                mesh(
+                        state,poseStack,collector,order,p,attachment,
+                        "array/cellplate",.5F,0,.5F,1,0,
+                        texture,reflect
+                );
+            }
+            case AND_CELL -> {
+                meshTinted(
+                        state,poseStack,collector,order,p,attachment,
+                        "array/nullcelltopwire",.5F,0,.5F,1,0,
+                        texture,reflect,signalColor(p.arraySignalB)
+                );
+                mesh(
+                        state,poseStack,collector,order,p,attachment,
+                        "array/cellstand",.5F,0,.5F,1,0,
+                        texture,reflect
+                );
+            }
+            case TRANSPARENT_LATCH_CELL -> {
+                meshTinted(
+                        state,poseStack,collector,order,p,attachment,
+                        "array/stacklatchwire",.5F,0,.5F,1,0,
+                        texture,reflect,signalColor(p.arraySignalB)
+                );
+                mesh(
+                        state,poseStack,collector,order,p,attachment,
+                        "array/latchstand",
+                        3.5F / 16.0F,2.0F / 16.0F,5.0F / 16.0F,
+                        1,0,texture,reflect
+                );
+                mesh(
+                        state,poseStack,collector,order,p,attachment,
+                        "array/latchstand",
+                        12.5F / 16.0F,2.0F / 16.0F,5.0F / 16.0F,
+                        1,0,texture,reflect
+                );
+            }
+            default -> {
+            }
+        }
+    }
+
+    private static void panelBase(
+            State state,
+            PoseStack poseStack,
+            SubmitNodeCollector collector,
+            int[] order,
+            Visual p,
+            Direction attachment,
+            float x,
+            float z,
+            boolean rotate,
+            Identifier texture,
+            boolean reflect
+    ) {
+        mesh(
+                state,poseStack,collector,order,p,attachment,
+                "array/lightpanel1",
+                x / 16.0F,0,z / 16.0F,
+                1.0F,
+                rotate ? (float) Math.PI : 0.0F,
+                texture,
+                reflect
+        );
+    }
+
+    private static void mesh(
+            State state,
+            PoseStack poseStack,
+            SubmitNodeCollector collector,
+            int[] order,
+            Visual p,
+            Direction attachment,
+            String model,
+            float offsetX,
+            float offsetY,
+            float offsetZ,
+            float scaleXZ,
+            float angleY,
+            Identifier texture,
+            boolean reflect
+    ) {
+        meshTinted(
+                state,poseStack,collector,order,p,attachment,
+                model,offsetX,offsetY,offsetZ,scaleXZ,angleY,
+                texture,reflect,0xFFFFFF
+        );
+    }
+
+    private static void meshTinted(
+            State state,
+            PoseStack poseStack,
+            SubmitNodeCollector collector,
+            int[] order,
+            Visual p,
+            Direction attachment,
+            String model,
+            float offsetX,
+            float offsetY,
+            float offsetZ,
+            float scaleXZ,
+            float angleY,
+            Identifier texture,
+            boolean reflect,
+            int rgb
+    ) {
         collector.order(order[0]++).submitCustomGeometry(
                 poseStack,
-                RenderTypes.entityCutout(WIRE_BORDER),
-                (pose, consumer) -> RenderGeometry.gateComponentBox(
-                        consumer, pose, state.lightCoords,
-                        attachment, p.gateRotation,
-                        centerX, .50F,
-                        .24F, .86F,
-                        .125F, .075F,
-                        reflect
+                RenderTypes.entityCutout(texture),
+                (pose, consumer) -> ProjectRedObjModel.get(model).render(
+                        consumer,
+                        pose,
+                        state.lightCoords,
+                        attachment,
+                        p.gateRotation,
+                        offsetX,
+                        offsetY,
+                        offsetZ,
+                        scaleXZ,
+                        angleY,
+                        reflect,
+                        rgb
                 )
         );
+    }
+
+    private static int signalColor(int signal) {
+        int red = Math.min(255, Math.max(0, signal) / 2 + 60);
+        return red << 16;
     }
 
     private static void signalPanel(
