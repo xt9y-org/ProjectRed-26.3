@@ -205,11 +205,17 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
                 RenderTypes.entityCutout(texture),
                 (pose, consumer) -> {
                     if (part.slot == Part.CENTER_SLOT) {
+                        float coreWidth = part.family == WireFamily.BUNDLED
+                                ? .383F
+                                : part.family == WireFamily.INSULATED
+                                        ? .258F
+                                        : .133F;
                         RenderGeometry.framedWire(
                                 consumer,
                                 pose,
                                 state.lightCoords,
                                 part.connections,
+                                coreWidth,
                                 wireTint(part)
                         );
                     } else {
