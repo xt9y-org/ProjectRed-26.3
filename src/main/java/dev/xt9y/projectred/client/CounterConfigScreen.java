@@ -140,8 +140,8 @@ public final class CounterConfigScreen extends Screen {
                 0.0F,
                 GUI_WIDTH,
                 GUI_HEIGHT,
-                GUI_WIDTH,
-                GUI_HEIGHT
+                256,
+                256
         );
 
         drawCentered(graphics, "Maximum: " + maximum, y + 5);
