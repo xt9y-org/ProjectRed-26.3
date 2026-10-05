@@ -91,8 +91,11 @@ public final class MultipartBlock extends BaseEntityBlock {
             return false;
         }
 
+        // Minecraft passes this direction from the neighboring dust's
+        // point of view. ProjectRed stores ports as outward directions from
+        // this multipart, so the two coordinate conventions are opposite.
         return level.getBlockEntity(pos) instanceof MultipartBlockEntity be
-                && be.canConnectVanillaRedstone(direction);
+                && be.canConnectVanillaRedstone(direction.getOpposite());
     }
 
     @Override
