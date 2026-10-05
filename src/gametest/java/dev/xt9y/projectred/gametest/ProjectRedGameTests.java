@@ -1573,6 +1573,114 @@ public final class ProjectRedGameTests {
         });
     }
 
+    @GameTest(structure = EMPTY, maxTicks = 70)
+    public void invertAndBufferCellsDriveTheirCrossingTrack(GameTestHelper helper) {
+        BlockPos invertRel = new BlockPos(2, 2, 2);
+        BlockPos bufferRel = new BlockPos(6, 2, 2);
+
+        for (BlockPos pos : new BlockPos[] { invertRel, bufferRel }) {
+            helper.setBlock(pos.below(), Blocks.STONE.defaultBlockState());
+            helper.setBlock(pos.north(), Blocks.REDSTONE_BLOCK.defaultBlockState());
+            helper.setBlock(pos, PRContent.MULTIPART.defaultBlockState());
+        }
+
+        MultipartBlockEntity invertMultipart = multipart(helper, invertRel);
+        MultipartBlockEntity bufferMultipart = multipart(helper, bufferRel);
+        GatePart invert = new GatePart(
+                GateType.INVERT_CELL,
+                Direction.DOWN.ordinal(),
+                0
+        );
+        GatePart buffer = new GatePart(
+                GateType.BUFFER_CELL,
+                Direction.DOWN.ordinal(),
+                0
+        );
+
+        helper.assertTrue(invertMultipart.add(invert), "failed to add invert cell");
+        helper.assertTrue(bufferMultipart.add(buffer), "failed to add buffer cell");
+
+        invertMultipart.onNeighborSignalChanged();
+        bufferMultipart.onNeighborSignalChanged();
+
+        helper.runAfterDelay(3, () -> {
+            helper.assertTrue(
+                    invertMultipart.vanillaSignal(Direction.EAST) == 0,
+                    "invert cell crossing output must be low while its north/south input is high"
+            );
+            helper.assertTrue(
+                    bufferMultipart.vanillaSignal(Direction.EAST) == 15,
+                    "buffer cell crossing output must be high while its north/south input is high"
+            );
+
+            helper.setBlock(invertRel.north(), Blocks.AIR.defaultBlockState());
+            helper.setBlock(bufferRel.north(), Blocks.AIR.defaultBlockState());
+            invertMultipart.onNeighborSignalChanged();
+            bufferMultipart.onNeighborSignalChanged();
+
+            helper.runAfterDelay(6, () -> {
+                helper.assertTrue(
+                        invertMultipart.vanillaSignal(Direction.WEST) == 15,
+                        "invert cell crossing output must rise after its input goes low"
+                );
+                helper.assertTrue(
+                        bufferMultipart.vanillaSignal(Direction.WEST) == 0,
+                        "buffer cell crossing output must clear after its input goes low"
+                );
+                helper.succeed();
+            });
+        });
+    }
+
+    @GameTest(structure = EMPTY, maxTicks = 60)
+    public void andCellCombinesDigitalInputWithRedwireTrack(GameTestHelper helper) {
+        BlockPos cellRel = new BlockPos(3, 2, 3);
+
+        helper.setBlock(cellRel.below(), Blocks.STONE.defaultBlockState());
+        helper.setBlock(cellRel.east(), Blocks.REDSTONE_BLOCK.defaultBlockState());
+        helper.setBlock(cellRel, PRContent.MULTIPART.defaultBlockState());
+
+        MultipartBlockEntity multipart = multipart(helper, cellRel);
+        GatePart cell = new GatePart(
+                GateType.AND_CELL,
+                Direction.DOWN.ordinal(),
+                0
+        );
+        helper.assertTrue(multipart.add(cell), "failed to add AND cell");
+
+        multipart.onNeighborSignalChanged();
+
+        helper.assertTrue(
+                multipart.vanillaSignal(Direction.WEST) == 15,
+                "AND cell must pass its east/west redwire track independently"
+        );
+        helper.assertTrue(
+                multipart.vanillaSignal(Direction.NORTH) == 0,
+                "AND cell logic output must stay low without its south digital input"
+        );
+
+        helper.setBlock(cellRel.south(), Blocks.REDSTONE_BLOCK.defaultBlockState());
+        multipart.onNeighborSignalChanged();
+
+        helper.runAfterDelay(3, () -> {
+            helper.assertTrue(
+                    multipart.vanillaSignal(Direction.NORTH) == 15,
+                    "AND cell must assert when redwire track and south input are both high"
+            );
+
+            helper.setBlock(cellRel.east(), Blocks.AIR.defaultBlockState());
+            multipart.onNeighborSignalChanged();
+
+            helper.runAfterDelay(6, () -> {
+                helper.assertTrue(
+                        multipart.vanillaSignal(Direction.NORTH) == 0,
+                        "AND cell must clear when its redwire track falls"
+                );
+                helper.succeed();
+            });
+        });
+    }
+
     private static Rig line(
             GameTestHelper helper,
             String firstId,
