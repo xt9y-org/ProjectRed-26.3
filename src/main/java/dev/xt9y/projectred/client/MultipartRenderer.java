@@ -283,6 +283,13 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
                     state, poseStack, collector, order, part, wires,
                     all, WIRE_BORDER, true
             );
+            int disabled = all & wires.disabledMask();
+            if (disabled != 0) {
+                submitGateWireLayer(
+                        state, poseStack, collector, order, part, wires,
+                        disabled, WIRE_BORDER, false
+                );
+            }
             if (off != 0) {
                 submitGateWireLayer(
                         state, poseStack, collector, order, part, wires,
