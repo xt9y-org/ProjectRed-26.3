@@ -855,10 +855,10 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
         collector.order(order[0]++).submitCustomGeometry(
                 poseStack,
                 RenderTypes.entityCutout(on ? TORCH_ON : TORCH_OFF),
-                (pose, consumer) -> RenderGeometry.gateTorch(
+                (pose, consumer) -> ProjectRedTorchModel.render(
                         consumer, pose, state.lightCoords,
                         attachment, p.gateRotation,
-                        x, z, height, reflect
+                        x, z, height, reflect, false
                 )
         );
     }
@@ -878,7 +878,7 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
         collector.order(order[0]++).submitCustomGeometry(
                 poseStack,
                 RenderTypes.entityCutout(on ? TORCH_ON : TORCH_OFF),
-                (pose, consumer) -> RenderGeometry.gateFlippedTorch(
+                (pose, consumer) -> ProjectRedTorchModel.render(
                         consumer,
                         pose,
                         state.lightCoords,
@@ -886,7 +886,9 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
                         p.gateRotation,
                         x,
                         z,
-                        reflect
+                        4,
+                        reflect,
+                        true
                 )
         );
     }
