@@ -742,18 +742,23 @@ final class RenderGeometry {
             PoseStack.Pose pose,
             int light,
             int connections,
+            float width,
             int rgb
     ) {
-        boxColor(c,pose,light,.25F,.25F,.25F,.75F,.75F,.75F,rgb);
+        float half = width * .5F;
+        float lo = .5F - half;
+        float hi = .5F + half;
+
+        boxColor(c,pose,light,lo,lo,lo,hi,hi,hi,rgb);
         for (Direction direction : Direction.values()) {
             if ((connections & (1 << direction.ordinal())) == 0) continue;
             switch (direction) {
-                case DOWN -> boxColor(c,pose,light,.25F,0,.25F,.75F,.25F,.75F,rgb);
-                case UP -> boxColor(c,pose,light,.25F,.75F,.25F,.75F,1,.75F,rgb);
-                case NORTH -> boxColor(c,pose,light,.25F,.25F,0,.75F,.75F,.25F,rgb);
-                case SOUTH -> boxColor(c,pose,light,.25F,.25F,.75F,.75F,.75F,1,rgb);
-                case WEST -> boxColor(c,pose,light,0,.25F,.25F,.25F,.75F,.75F,rgb);
-                case EAST -> boxColor(c,pose,light,.75F,.25F,.25F,1,.75F,.75F,rgb);
+                case DOWN -> boxColor(c,pose,light,lo,0,lo,hi,.5F,hi,rgb);
+                case UP -> boxColor(c,pose,light,lo,.5F,lo,hi,1,hi,rgb);
+                case NORTH -> boxColor(c,pose,light,lo,lo,0,hi,hi,.5F,rgb);
+                case SOUTH -> boxColor(c,pose,light,lo,lo,.5F,hi,hi,1,rgb);
+                case WEST -> boxColor(c,pose,light,0,lo,lo,.5F,hi,hi,rgb);
+                case EAST -> boxColor(c,pose,light,.5F,lo,lo,1,hi,hi,rgb);
             }
         }
     }
@@ -764,23 +769,72 @@ final class RenderGeometry {
             int light,
             int connections
     ) {
-        float e = .0015F;
-        box(
-                c,
-                pose,
-                light,
-                .25F-e,.25F-e,.25F-e,
-                .75F+e,.75F+e,.75F+e
-        );
+        // Approximate the original FWireFrameModelGen as an open 1/16-thick
+        // frame around a 0.25..0.75 center cube. Unlike the old solid overlay,
+        // this leaves the colored conductor visible through the frame.
+        float a = .25F;
+        float b = .75F;
+        float t = .0605F;
+
+        // Center-cube edge rails.
+        for (int iy = 0; iy < 2; iy++) {
+            float y0 = iy == 0 ? a : b - t;
+            for (int iz = 0; iz < 2; iz++) {
+                float z0 = iz == 0 ? a : b - t;
+                box(c,pose,light,a,y0,z0,b,y0+t,z0+t);
+            }
+        }
+        for (int ix = 0; ix < 2; ix++) {
+            float x0 = ix == 0 ? a : b - t;
+            for (int iz = 0; iz < 2; iz++) {
+                float z0 = iz == 0 ? a : b - t;
+                box(c,pose,light,x0,a,z0,x0+t,b,z0+t);
+            }
+        }
+        for (int ix = 0; ix < 2; ix++) {
+            float x0 = ix == 0 ? a : b - t;
+            for (int iy = 0; iy < 2; iy++) {
+                float y0 = iy == 0 ? a : b - t;
+                box(c,pose,light,x0,y0,a,x0+t,y0+t,b);
+            }
+        }
+
         for (Direction direction : Direction.values()) {
             if ((connections & (1 << direction.ordinal())) == 0) continue;
             switch (direction) {
-                case DOWN -> box(c,pose,light,.25F-e,0,.25F-e,.75F+e,.25F,.75F+e);
-                case UP -> box(c,pose,light,.25F-e,.75F,.25F-e,.75F+e,1,.75F+e);
-                case NORTH -> box(c,pose,light,.25F-e,.25F-e,0,.75F+e,.75F+e,.25F);
-                case SOUTH -> box(c,pose,light,.25F-e,.25F-e,.75F,.75F+e,.75F+e,1);
-                case WEST -> box(c,pose,light,0,.25F-e,.25F-e,.25F,.75F+e,.75F+e);
-                case EAST -> box(c,pose,light,.75F,.25F-e,.25F-e,1,.75F+e,.75F+e);
+                case DOWN, UP -> {
+                    float y0 = direction == Direction.DOWN ? 0 : b;
+                    float y1 = direction == Direction.DOWN ? a : 1;
+                    for (int ix = 0; ix < 2; ix++) {
+                        float x0 = ix == 0 ? a : b - t;
+                        for (int iz = 0; iz < 2; iz++) {
+                            float z0 = iz == 0 ? a : b - t;
+                            box(c,pose,light,x0,y0,z0,x0+t,y1,z0+t);
+                        }
+                    }
+                }
+                case NORTH, SOUTH -> {
+                    float z0 = direction == Direction.NORTH ? 0 : b;
+                    float z1 = direction == Direction.NORTH ? a : 1;
+                    for (int ix = 0; ix < 2; ix++) {
+                        float x0 = ix == 0 ? a : b - t;
+                        for (int iy = 0; iy < 2; iy++) {
+                            float y0 = iy == 0 ? a : b - t;
+                            box(c,pose,light,x0,y0,z0,x0+t,y0+t,z1);
+                        }
+                    }
+                }
+                case WEST, EAST -> {
+                    float x0 = direction == Direction.WEST ? 0 : b;
+                    float x1 = direction == Direction.WEST ? a : 1;
+                    for (int iy = 0; iy < 2; iy++) {
+                        float y0 = iy == 0 ? a : b - t;
+                        for (int iz = 0; iz < 2; iz++) {
+                            float z0 = iz == 0 ? a : b - t;
+                            box(c,pose,light,x0,y0,z0,x1,y0+t,z0+t);
+                        }
+                    }
+                }
             }
         }
     }
