@@ -74,16 +74,40 @@ final class ProjectRedObjModel {
             float scaleXZ,
             float angleY,
             boolean reflect,
-            int rgb
+            int rgb,
+            boolean invertModelX
     ) {
         renderFiltered(
                 consumer, pose, light, attachment, rotation,
                 offsetX, offsetY, offsetZ, scaleXZ, angleY, reflect,
-                rgb, null
+                rgb, null, true
         );
     }
 
     void renderGroup(
+            VertexConsumer consumer,
+            PoseStack.Pose pose,
+            int light,
+            Direction attachment,
+            int rotation,
+            float offsetX,
+            float offsetY,
+            float offsetZ,
+            float scaleXZ,
+            float angleY,
+            boolean reflect,
+            int rgb,
+            String group,
+            boolean invertModelX
+    ) {
+        renderFiltered(
+                consumer, pose, light, attachment, rotation,
+                offsetX, offsetY, offsetZ, scaleXZ, angleY, reflect,
+                rgb, group, true
+        );
+    }
+
+    void renderCorrectedGroup(
             VertexConsumer consumer,
             PoseStack.Pose pose,
             int light,
@@ -101,7 +125,7 @@ final class ProjectRedObjModel {
         renderFiltered(
                 consumer, pose, light, attachment, rotation,
                 offsetX, offsetY, offsetZ, scaleXZ, angleY, reflect,
-                rgb, group
+                rgb, group, false
         );
     }
 
@@ -143,7 +167,7 @@ final class ProjectRedObjModel {
                         right, down, normal,
                         originX, originY, originZ,
                         offsetX, offsetY, offsetZ,
-                        scaleXZ, cos, sin, reflect, rgb
+                        scaleXZ, cos, sin, reflect, rgb, invertModelX
                 );
                 emit(
                         consumer, pose, light,
@@ -151,7 +175,7 @@ final class ProjectRedObjModel {
                         right, down, normal,
                         originX, originY, originZ,
                         offsetX, offsetY, offsetZ,
-                        scaleXZ, cos, sin, reflect, rgb
+                        scaleXZ, cos, sin, reflect, rgb, invertModelX
                 );
                 continue;
             }
@@ -167,7 +191,7 @@ final class ProjectRedObjModel {
                         right,down,normal,
                         originX,originY,originZ,
                         offsetX,offsetY,offsetZ,
-                        scaleXZ,cos,sin,reflect,rgb
+                        scaleXZ,cos,sin,reflect,rgb,invertModelX
                 );
                 emit(
                         consumer, pose, light,
@@ -175,7 +199,7 @@ final class ProjectRedObjModel {
                         right,down,normal,
                         originX,originY,originZ,
                         offsetX,offsetY,offsetZ,
-                        scaleXZ,cos,sin,reflect,rgb
+                        scaleXZ,cos,sin,reflect,rgb,invertModelX
                 );
             }
         }
@@ -204,10 +228,10 @@ final class ProjectRedObjModel {
             boolean reflect,
             int rgb
     ) {
-        vertex(consumer,pose,light,a,right,down,normal,originX,originY,originZ,offsetX,offsetY,offsetZ,scaleXZ,cos,sin,reflect,rgb);
-        vertex(consumer,pose,light,b,right,down,normal,originX,originY,originZ,offsetX,offsetY,offsetZ,scaleXZ,cos,sin,reflect,rgb);
-        vertex(consumer,pose,light,c,right,down,normal,originX,originY,originZ,offsetX,offsetY,offsetZ,scaleXZ,cos,sin,reflect,rgb);
-        vertex(consumer,pose,light,d,right,down,normal,originX,originY,originZ,offsetX,offsetY,offsetZ,scaleXZ,cos,sin,reflect,rgb);
+        vertex(consumer,pose,light,a,right,down,normal,originX,originY,originZ,offsetX,offsetY,offsetZ,scaleXZ,cos,sin,reflect,rgb,invertModelX);
+        vertex(consumer,pose,light,b,right,down,normal,originX,originY,originZ,offsetX,offsetY,offsetZ,scaleXZ,cos,sin,reflect,rgb,invertModelX);
+        vertex(consumer,pose,light,c,right,down,normal,originX,originY,originZ,offsetX,offsetY,offsetZ,scaleXZ,cos,sin,reflect,rgb,invertModelX);
+        vertex(consumer,pose,light,d,right,down,normal,originX,originY,originZ,offsetX,offsetY,offsetZ,scaleXZ,cos,sin,reflect,rgb,invertModelX);
     }
 
     private void vertex(
@@ -228,10 +252,11 @@ final class ProjectRedObjModel {
             float cos,
             float sin,
             boolean reflect,
-            int rgb
+            int rgb,
+            boolean invertModelX
     ) {
         float[] source = positions[ref.position];
-        float x = source[0] * scaleXZ;
+        float x = (invertModelX ? -source[0] : source[0]) * scaleXZ;
         float y = source[1];
         float z = source[2] * scaleXZ;
 
@@ -264,7 +289,7 @@ final class ProjectRedObjModel {
         float nz = 0.0F;
         if (ref.normal >= 0 && ref.normal < normals.length) {
             float[] n = normals[ref.normal];
-            float modelNx = n[0];
+            float modelNx = invertModelX ? -n[0] : n[0];
             float modelNy = n[1];
             float modelNz = n[2];
             float rotatedNx = modelNx * cos - modelNz * sin;
