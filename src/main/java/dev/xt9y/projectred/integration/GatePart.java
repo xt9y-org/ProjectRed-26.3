@@ -438,6 +438,18 @@ public final class GatePart extends Part {
         pointerNeedsWorldTimeRebase = false;
     }
 
+    public boolean needsServerTick() {
+        if (scheduledAt >= 0 || tickSoundPending) {
+            return true;
+        }
+
+        return switch (type) {
+            case LIGHT_SENSOR, RAIN_SENSOR, TIMER, SEQUENCER -> true;
+            case STATE_CELL -> state2 != 0 || pointerStart >= 0;
+            default -> false;
+        };
+    }
+
     public boolean tick(MultipartBlockEntity owner) {
         int beforeState = state;
         int beforeState2 = state2;
