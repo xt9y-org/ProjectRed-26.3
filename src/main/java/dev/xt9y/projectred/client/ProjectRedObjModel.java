@@ -275,9 +275,9 @@ final class ProjectRedObjModel {
             boolean flipV
     ) {
         vertex(consumer,pose,light,a,right,down,normal,originX,originY,originZ,offsetX,offsetY,offsetZ,scaleXZ,cos,sin,reflect,rgb,invertModelX,uvCenterU,uvCenterV,flipU,flipV);
-        vertex(consumer,pose,light,b,right,down,normal,originX,originY,originZ,offsetX,offsetY,offsetZ,scaleXZ,cos,sin,reflect,rgb,invertModelX);
-        vertex(consumer,pose,light,c,right,down,normal,originX,originY,originZ,offsetX,offsetY,offsetZ,scaleXZ,cos,sin,reflect,rgb,invertModelX);
-        vertex(consumer,pose,light,d,right,down,normal,originX,originY,originZ,offsetX,offsetY,offsetZ,scaleXZ,cos,sin,reflect,rgb,invertModelX);
+        vertex(consumer,pose,light,b,right,down,normal,originX,originY,originZ,offsetX,offsetY,offsetZ,scaleXZ,cos,sin,reflect,rgb,invertModelX,uvCenterU,uvCenterV,flipU,flipV);
+        vertex(consumer,pose,light,c,right,down,normal,originX,originY,originZ,offsetX,offsetY,offsetZ,scaleXZ,cos,sin,reflect,rgb,invertModelX,uvCenterU,uvCenterV,flipU,flipV);
+        vertex(consumer,pose,light,d,right,down,normal,originX,originY,originZ,offsetX,offsetY,offsetZ,scaleXZ,cos,sin,reflect,rgb,invertModelX,uvCenterU,uvCenterV,flipU,flipV);
     }
 
     private void vertex(
