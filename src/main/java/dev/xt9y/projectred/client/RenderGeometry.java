@@ -116,7 +116,8 @@ final class RenderGeometry {
             Direction attachment,
             int rotation,
             float surfaceDepth,
-            float angle
+            float angle,
+            float lateralOffset
     ) {
         Direction forward = MultipartBlockEntity.localToWorld(
                 attachment,
@@ -147,9 +148,9 @@ final class RenderGeometry {
         float py = -fy * sin + ry * cos;
         float pz = -fz * sin + rz * cos;
 
-        float cx = .5F;
-        float cy = .5F;
-        float cz = .5F;
+        float cx = .5F + rx * lateralOffset;
+        float cy = .5F + ry * lateralOffset;
+        float cz = .5F + rz * lateralOffset;
 
         float face = surfaceDepth + .002F;
         switch (attachment) {

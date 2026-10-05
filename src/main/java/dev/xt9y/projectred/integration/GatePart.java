@@ -145,8 +145,7 @@ public final class GatePart extends Part {
                         ? 0.0F
                         : (float) counterValue / (float) counterMax;
                 float degrees = 210.0F + progress * 120.0F;
-                float angle = (float) Math.toRadians(degrees);
-                yield shape == 1 ? -angle : angle;
+                yield (float) Math.toRadians(degrees);
             }
             case STATE_CELL -> {
                 if (pointerStart < 0) yield -(float) Math.PI / 2.0F;
@@ -158,11 +157,17 @@ public final class GatePart extends Part {
                                 (gameTime - pointerStart + partialTick) / max
                         )
                 );
-                float angle = progress * ((float) Math.PI * 2.0F)
-                        - (float) Math.PI / 2.0F;
-                yield shape == 1 ? -angle : angle;
+                yield progress - (float) Math.PI / 2.0F;
             }
             default -> Float.NaN;
+        };
+    }
+
+    public float pointerLateralOffset() {
+        return switch (type) {
+            case COUNTER -> (shape == 1 ? -1.0F : 1.0F) * (3.0F / 16.0F);
+            case STATE_CELL -> (shape == 1 ? -1.0F : 1.0F) * (5.0F / 16.0F);
+            default -> 0.0F;
         };
     }
 

@@ -50,7 +50,8 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
             boolean arrayCell,
             int bundledMask,
             int panelMask,
-            float pointerAngle
+            float pointerAngle,
+            float pointerOffset
     ) {}
 
     @Override
@@ -88,7 +89,8 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
                         false,
                         0,
                         0,
-                        Float.NaN
+                        Float.NaN,
+                        0.0F
                 ));
             } else if (part instanceof GatePart gate) {
                 out.add(new Visual(
@@ -113,7 +115,8 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
                                         ? 0L
                                         : blockEntity.getLevel().getDefaultClockTime(),
                                 partialTick
-                        )
+                        ),
+                        gate.pointerLateralOffset()
                 ));
             }
         }
@@ -267,7 +270,8 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
                                 attachment,
                                 part.gateRotation,
                                 part.arrayCell ? .755F : .132F,
-                                part.pointerAngle
+                                part.pointerAngle,
+                                part.pointerOffset
                         )
                 );
             }
