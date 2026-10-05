@@ -944,6 +944,10 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
                         "array/nullcelltopwire",.5F,0,.5F,1,0,
                         texture,reflect,signalColor(p.arraySignalB)
                 );
+                arrayTopCaps(
+                        state,poseStack,collector,order,p,attachment,
+                        texture,reflect,p.arraySignalB
+                );
                 mesh(
                         state,poseStack,collector,order,p,attachment,
                         "array/cellstand",.5F,0,.5F,1,0,
@@ -961,6 +965,10 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
                         "array/extendedcelltopwire",.5F,0,.5F,1,0,
                         texture,reflect,signalColor(p.arraySignalB)
                 );
+                arrayTopCaps(
+                        state,poseStack,collector,order,p,attachment,
+                        texture,reflect,p.arraySignalB
+                );
                 mesh(
                         state,poseStack,collector,order,p,attachment,
                         "array/cellstand",.5F,0,.5F,1,0,
@@ -977,6 +985,10 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
                         state,poseStack,collector,order,p,attachment,
                         "array/nullcelltopwire",.5F,0,.5F,1,0,
                         texture,reflect,signalColor(p.arraySignalB)
+                );
+                arrayTopCaps(
+                        state,poseStack,collector,order,p,attachment,
+                        texture,reflect,p.arraySignalB
                 );
                 mesh(
                         state,poseStack,collector,order,p,attachment,
@@ -1005,6 +1017,36 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
             }
             default -> {
             }
+        }
+    }
+
+    private static void arrayTopCaps(
+            State state,
+            PoseStack poseStack,
+            SubmitNodeCollector collector,
+            int[] order,
+            Visual p,
+            Direction attachment,
+            Identifier texture,
+            boolean reflect,
+            int signal
+    ) {
+        int color = signalColor(signal);
+        if ((p.arrayTopConnections & 2) == 0) {
+            meshTinted(
+                    state,poseStack,collector,order,p,attachment,
+                    "array/cellsidewire",
+                    .5F + 7.001F / 16.0F,0,.5F,
+                    1,0,texture,reflect,color
+            );
+        }
+        if ((p.arrayTopConnections & 8) == 0) {
+            meshTinted(
+                    state,poseStack,collector,order,p,attachment,
+                    "array/cellsidewire",
+                    .5F - 7.001F / 16.0F,0,.5F,
+                    1,0,texture,reflect,color
+            );
         }
     }
 
