@@ -211,17 +211,17 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
                 RenderTypes.entityCutout(texture),
                 (pose, consumer) -> {
                     if (part.slot == Part.CENTER_SLOT) {
-                        float coreWidth = part.family == WireFamily.BUNDLED
-                                ? .383F
+                        int thickness = part.family == WireFamily.BUNDLED
+                                ? 2
                                 : part.family == WireFamily.INSULATED
-                                        ? .258F
-                                        : .133F;
-                        RenderGeometry.framedWire(
+                                        ? 1
+                                        : 0;
+                        ProjectRedFramedWireModel.render(
                                 consumer,
                                 pose,
                                 state.lightCoords,
+                                thickness,
                                 part.connections,
-                                coreWidth,
                                 wireTint(part)
                         );
                     } else {
@@ -257,18 +257,6 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
                 }
         );
 
-        if (part.slot == Part.CENTER_SLOT) {
-            collector.order(order[0]++).submitCustomGeometry(
-                    poseStack,
-                    RenderTypes.entityCutout(WIRE_BORDER),
-                    (pose, consumer) -> RenderGeometry.framedWireOverlay(
-                            consumer,
-                            pose,
-                            state.lightCoords,
-                            part.connections
-                    )
-            );
-        }
     }
 
     private static void submitGate(
