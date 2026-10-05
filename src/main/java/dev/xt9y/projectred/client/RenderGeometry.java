@@ -346,16 +346,18 @@ final class RenderGeometry {
             int light,
             int connections
     ) {
-        box(c, pose, light, .375F,.375F,.375F, .625F,.625F,.625F);
+        // BaseCenterWirePart uses 2/8 from center on every axis:
+        // a 0.25..0.75 center cube with equally wide connection arms.
+        box(c, pose, light, .25F,.25F,.25F, .75F,.75F,.75F);
         for (Direction direction : Direction.values()) {
             if ((connections & (1 << direction.ordinal())) == 0) continue;
             switch (direction) {
-                case DOWN -> box(c,pose,light,.4375F,0,.4375F,.5625F,.375F,.5625F);
-                case UP -> box(c,pose,light,.4375F,.625F,.4375F,.5625F,1,.5625F);
-                case NORTH -> box(c,pose,light,.4375F,.4375F,0,.5625F,.5625F,.375F);
-                case SOUTH -> box(c,pose,light,.4375F,.4375F,.625F,.5625F,.5625F,1);
-                case WEST -> box(c,pose,light,0,.4375F,.4375F,.375F,.5625F,.5625F);
-                case EAST -> box(c,pose,light,.625F,.4375F,.4375F,1,.5625F,.5625F);
+                case DOWN -> box(c,pose,light,.25F,0,.25F,.75F,.25F,.75F);
+                case UP -> box(c,pose,light,.25F,.75F,.25F,.75F,1,.75F);
+                case NORTH -> box(c,pose,light,.25F,.25F,0,.75F,.75F,.25F);
+                case SOUTH -> box(c,pose,light,.25F,.25F,.75F,.75F,.75F,1);
+                case WEST -> box(c,pose,light,0,.25F,.25F,.25F,.75F,.75F);
+                case EAST -> box(c,pose,light,.75F,.25F,.25F,1,.75F,.75F);
             }
         }
     }
@@ -371,18 +373,18 @@ final class RenderGeometry {
                 c,
                 pose,
                 light,
-                .375F-e,.375F-e,.375F-e,
-                .625F+e,.625F+e,.625F+e
+                .25F-e,.25F-e,.25F-e,
+                .75F+e,.75F+e,.75F+e
         );
         for (Direction direction : Direction.values()) {
             if ((connections & (1 << direction.ordinal())) == 0) continue;
             switch (direction) {
-                case DOWN -> box(c,pose,light,.4375F-e,0,.4375F-e,.5625F+e,.375F,.5625F+e);
-                case UP -> box(c,pose,light,.4375F-e,.625F,.4375F-e,.5625F+e,1,.5625F+e);
-                case NORTH -> box(c,pose,light,.4375F-e,.4375F-e,0,.5625F+e,.5625F+e,.375F);
-                case SOUTH -> box(c,pose,light,.4375F-e,.4375F-e,.625F,.5625F+e,.5625F+e,1);
-                case WEST -> box(c,pose,light,0,.4375F-e,.4375F-e,.375F,.5625F+e,.5625F+e);
-                case EAST -> box(c,pose,light,.625F,.4375F-e,.4375F-e,1,.5625F+e,.5625F+e);
+                case DOWN -> box(c,pose,light,.25F-e,0,.25F-e,.75F+e,.25F,.75F+e);
+                case UP -> box(c,pose,light,.25F-e,.75F,.25F-e,.75F+e,1,.75F+e);
+                case NORTH -> box(c,pose,light,.25F-e,.25F-e,0,.75F+e,.75F+e,.25F);
+                case SOUTH -> box(c,pose,light,.25F-e,.25F-e,.75F,.75F+e,.75F+e,1);
+                case WEST -> box(c,pose,light,0,.25F-e,.25F-e,.25F,.75F+e,.75F+e);
+                case EAST -> box(c,pose,light,.75F,.25F-e,.25F-e,1,.75F+e,.75F+e);
             }
         }
     }
