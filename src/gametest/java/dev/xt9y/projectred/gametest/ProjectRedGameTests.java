@@ -12,6 +12,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.RedstoneWireBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 
 public final class ProjectRedGameTests {
@@ -627,10 +628,15 @@ public final class ProjectRedGameTests {
     @GameTest(structure = EMPTY, maxTicks = 40)
     public void framedWireSharesMultipartWithFaceWire(GameTestHelper helper) {
         BlockPos multipartRel = new BlockPos(3, 2, 3);
-        BlockPos sourceRel = multipartRel.north();
+        BlockPos dustRel = multipartRel.north();
 
         helper.setBlock(multipartRel.below(), Blocks.STONE.defaultBlockState());
-        helper.setBlock(sourceRel, Blocks.REDSTONE_BLOCK.defaultBlockState());
+        helper.setBlock(dustRel.below(), Blocks.STONE.defaultBlockState());
+        helper.setBlock(
+                dustRel,
+                Blocks.REDSTONE_WIRE.defaultBlockState()
+                        .setValue(RedstoneWireBlock.POWER, 15)
+        );
         helper.setBlock(multipartRel, PRContent.MULTIPART.defaultBlockState());
 
         MultipartBlockEntity multipart = multipart(helper, multipartRel);
@@ -654,12 +660,12 @@ public final class ProjectRedGameTests {
         multipart.onNeighborSignalChanged();
 
         helper.assertTrue(
-                face.signal() == 255,
-                "face wire should read full adjacent vanilla redstone power"
+                face.signal() == 14,
+                "face wire must use ProjectRed's POWER-1 vanilla-dust lookup"
         );
         helper.assertTrue(
-                framed.signal() == 254,
-                "framed center wire must receive face-wire signal with one-step attenuation"
+                framed.signal() == 13,
+                "framed center wire must receive the face-wire signal with one additional attenuation"
         );
         helper.assertTrue(
                 multipart.hasSlot(Direction.DOWN.ordinal())
