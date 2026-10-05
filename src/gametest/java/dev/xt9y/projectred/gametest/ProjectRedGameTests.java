@@ -1065,7 +1065,7 @@ public final class ProjectRedGameTests {
         helper.setBlock(
                 repeaterRel,
                 Blocks.REPEATER.defaultBlockState()
-                        .setValue(RepeaterBlock.FACING, Direction.EAST)
+                        .setValue(RepeaterBlock.FACING, Direction.WEST)
         );
         helper.setBlock(wireRel, PRContent.MULTIPART.defaultBlockState());
 
@@ -1082,13 +1082,13 @@ public final class ProjectRedGameTests {
             multipart.onNeighborSignalChanged();
             helper.assertTrue(
                     wire.signal() == 255,
-                    "east-facing powered vanilla repeater must feed the ProjectRed wire to its east"
+                    "west-input vanilla repeater must feed the ProjectRed wire from its east output"
             );
 
             helper.setBlock(
                     repeaterRel,
                     Blocks.REPEATER.defaultBlockState()
-                            .setValue(RepeaterBlock.FACING, Direction.WEST)
+                            .setValue(RepeaterBlock.FACING, Direction.EAST)
             );
 
             helper.runAfterDelay(8, () -> {
