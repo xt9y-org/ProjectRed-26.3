@@ -22,6 +22,9 @@ jobs:
 
       - run: gradle clean build --stacktrace --no-daemon
 
+      - name: Run Fabric GameTests
+        run: gradle runGametest --stacktrace --no-daemon
+
       - name: Smoke-test Fabric server
         shell: bash
         run: |
