@@ -106,7 +106,7 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
 
             if (part instanceof WirePart wire) {
                 boolean powered = wire.spec().family() == WireFamily.BUNDLED
-                        ? java.util.Arrays.stream(wire.bundled()).anyMatch(v -> v > 0)
+                        ? bundledPowered(wire.bundled())
                         : wire.signal() > 0;
                 out.add(new Visual(
                         true,
@@ -1231,6 +1231,13 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
     private static int highestBit(int mask) {
         mask &= 0xFFFF;
         return mask == 0 ? 0 : 31 - Integer.numberOfLeadingZeros(mask);
+    }
+
+    private static boolean bundledPowered(int[] signal) {
+        for (int value : signal) {
+            if (value > 0) return true;
+        }
+        return false;
     }
 
     private static int wireTint(Visual part) {
