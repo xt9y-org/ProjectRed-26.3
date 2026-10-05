@@ -672,6 +672,300 @@ public final class ProjectRedGameTests {
         helper.succeed();
     }
 
+    @GameTest(structure = EMPTY, maxTicks = 40)
+    public void pulseGateEmitsExactlyTwoTickRisingEdgePulse(GameTestHelper helper) {
+        BlockPos gateRel = new BlockPos(3, 2, 3);
+        BlockPos inputRel = gateRel.south();
+
+        helper.setBlock(gateRel.below(), Blocks.STONE.defaultBlockState());
+        helper.setBlock(gateRel, PRContent.MULTIPART.defaultBlockState());
+
+        MultipartBlockEntity multipart = multipart(helper, gateRel);
+        GatePart pulse = new GatePart(
+                GateType.PULSE,
+                Direction.DOWN.ordinal(),
+                0
+        );
+        helper.assertTrue(multipart.add(pulse), "failed to add pulse gate");
+
+        helper.setBlock(inputRel, Blocks.REDSTONE_BLOCK.defaultBlockState());
+        multipart.onNeighborSignalChanged();
+
+        helper.assertTrue(
+                multipart.vanillaSignal(Direction.NORTH) == 15,
+                "pulse gate must go high immediately on the rising edge"
+        );
+
+        helper.runAfterDelay(1, () ->
+                helper.assertTrue(
+                        multipart.vanillaSignal(Direction.NORTH) == 15,
+                        "pulse gate must remain high for the full two-tick pulse"
+                )
+        );
+
+        helper.runAfterDelay(3, () -> {
+            helper.assertTrue(
+                    multipart.vanillaSignal(Direction.NORTH) == 0,
+                    "pulse gate must return low after its two-tick pulse"
+            );
+            helper.succeed();
+        });
+    }
+
+    @GameTest(structure = EMPTY, maxTicks = 40)
+    public void toggleLatchMovesOutputAfterProjectRedDelay(GameTestHelper helper) {
+        BlockPos gateRel = new BlockPos(3, 2, 3);
+        BlockPos inputRel = gateRel.east();
+
+        helper.setBlock(gateRel.below(), Blocks.STONE.defaultBlockState());
+        helper.setBlock(gateRel, PRContent.MULTIPART.defaultBlockState());
+
+        MultipartBlockEntity multipart = multipart(helper, gateRel);
+        GatePart latch = new GatePart(
+                GateType.TOGGLE_LATCH,
+                Direction.DOWN.ordinal(),
+                0
+        );
+        helper.assertTrue(multipart.add(latch), "failed to add toggle latch");
+        helper.assertTrue(
+                multipart.vanillaSignal(Direction.NORTH) == 15,
+                "fresh toggle latch must begin on its north output"
+        );
+
+        helper.setBlock(inputRel, Blocks.REDSTONE_BLOCK.defaultBlockState());
+        multipart.onNeighborSignalChanged();
+
+        helper.assertTrue(
+                multipart.vanillaSignal(Direction.NORTH) == 15,
+                "toggle latch must preserve its old output until the scheduled tick"
+        );
+
+        helper.runAfterDelay(3, () -> {
+            helper.assertTrue(
+                    multipart.vanillaSignal(Direction.NORTH) == 0,
+                    "toggle latch north output must switch off after two ticks"
+            );
+            helper.assertTrue(
+                    multipart.vanillaSignal(Direction.SOUTH) == 15,
+                    "toggle latch opposite output must switch on after two ticks"
+            );
+            helper.succeed();
+        });
+    }
+
+    @GameTest(structure = EMPTY, maxTicks = 60)
+    public void counterTracksIncrementAndDecrementEdges(GameTestHelper helper) {
+        BlockPos gateRel = new BlockPos(3, 2, 3);
+        BlockPos incrementRel = gateRel.east();
+        BlockPos decrementRel = gateRel.west();
+
+        helper.setBlock(gateRel.below(), Blocks.STONE.defaultBlockState());
+        helper.setBlock(gateRel, PRContent.MULTIPART.defaultBlockState());
+
+        MultipartBlockEntity multipart = multipart(helper, gateRel);
+        GatePart counter = new GatePart(
+                GateType.COUNTER,
+                Direction.DOWN.ordinal(),
+                0
+        );
+        helper.assertTrue(multipart.add(counter), "failed to add counter");
+
+        helper.setBlock(incrementRel, Blocks.REDSTONE_BLOCK.defaultBlockState());
+        multipart.onNeighborSignalChanged();
+
+        helper.assertTrue(
+                counter.counterValue() == 1,
+                "east rising edge must increment the counter"
+        );
+
+        helper.runAfterDelay(3, () -> {
+            helper.assertTrue(
+                    multipart.vanillaSignal(Direction.NORTH) == 0
+                            && multipart.vanillaSignal(Direction.SOUTH) == 0,
+                    "intermediate counter values must keep both endpoint outputs low"
+            );
+
+            helper.setBlock(incrementRel, Blocks.AIR.defaultBlockState());
+            multipart.onNeighborSignalChanged();
+            helper.setBlock(decrementRel, Blocks.REDSTONE_BLOCK.defaultBlockState());
+            multipart.onNeighborSignalChanged();
+
+            helper.assertTrue(
+                    counter.counterValue() == 0,
+                    "west rising edge must decrement the counter"
+            );
+
+            helper.runAfterDelay(3, () -> {
+                helper.assertTrue(
+                        multipart.vanillaSignal(Direction.SOUTH) == 15,
+                        "counter value zero must drive its zero endpoint output"
+                );
+                helper.succeed();
+            });
+        });
+    }
+
+    @GameTest(structure = EMPTY, maxTicks = 80)
+    public void synchronizerWaitsForBothEdgesThenPulses(GameTestHelper helper) {
+        BlockPos gateRel = new BlockPos(3, 2, 3);
+        BlockPos rightRel = gateRel.east();
+        BlockPos leftRel = gateRel.west();
+
+        helper.setBlock(gateRel.below(), Blocks.STONE.defaultBlockState());
+        helper.setBlock(gateRel, PRContent.MULTIPART.defaultBlockState());
+
+        MultipartBlockEntity multipart = multipart(helper, gateRel);
+        GatePart synchronizer = new GatePart(
+                GateType.SYNCHRONIZER,
+                Direction.DOWN.ordinal(),
+                0
+        );
+        helper.assertTrue(multipart.add(synchronizer), "failed to add synchronizer");
+
+        helper.setBlock(rightRel, Blocks.REDSTONE_BLOCK.defaultBlockState());
+        multipart.onNeighborSignalChanged();
+
+        helper.runAfterDelay(3, () -> {
+            helper.assertTrue(
+                    multipart.vanillaSignal(Direction.NORTH) == 0,
+                    "one synchronizer edge alone must not pulse"
+            );
+
+            helper.setBlock(leftRel, Blocks.REDSTONE_BLOCK.defaultBlockState());
+            multipart.onNeighborSignalChanged();
+
+            helper.runAfterDelay(3, () ->
+                    helper.assertTrue(
+                            multipart.vanillaSignal(Direction.NORTH) == 15,
+                            "second latched edge must produce the synchronizer pulse"
+                    )
+            );
+
+            helper.runAfterDelay(6, () -> {
+                helper.assertTrue(
+                        multipart.vanillaSignal(Direction.NORTH) == 0,
+                        "synchronizer pulse must clear after two ticks"
+                );
+                helper.succeed();
+            });
+        });
+    }
+
+    @GameTest(structure = EMPTY, maxTicks = 80)
+    public void busRandomizerRespectsSingleChannelMask(GameTestHelper helper) {
+        BlockPos randomizerRel = new BlockPos(4, 2, 4);
+        BlockPos panelRel = randomizerRel.south();
+        BlockPos outputRel = randomizerRel.north();
+        BlockPos controlRel = randomizerRel.east();
+
+        for (BlockPos pos : new BlockPos[] {
+                randomizerRel, panelRel, outputRel
+        }) {
+            helper.setBlock(pos.below(), Blocks.STONE.defaultBlockState());
+            helper.setBlock(pos, PRContent.MULTIPART.defaultBlockState());
+        }
+
+        MultipartBlockEntity randomizerMultipart = multipart(helper, randomizerRel);
+        MultipartBlockEntity panelMultipart = multipart(helper, panelRel);
+        MultipartBlockEntity outputMultipart = multipart(helper, outputRel);
+
+        GatePart randomizer = new GatePart(
+                GateType.BUS_RANDOMIZER,
+                Direction.DOWN.ordinal(),
+                0
+        );
+        GatePart panel = new GatePart(
+                GateType.BUS_INPUT_PANEL,
+                Direction.DOWN.ordinal(),
+                2
+        );
+        WirePart output = new WirePart(
+                requireWire("neutral_bundled_wire"),
+                Direction.DOWN.ordinal()
+        );
+
+        helper.assertTrue(randomizerMultipart.add(randomizer), "failed to add bus randomizer");
+        helper.assertTrue(panelMultipart.add(panel), "failed to add mask panel");
+        helper.assertTrue(outputMultipart.add(output), "failed to add randomizer output cable");
+
+        panel.togglePanelBit(5);
+        panelMultipart.markPartChanged();
+
+        helper.runAfterDelay(3, () -> {
+            helper.setBlock(controlRel, Blocks.REDSTONE_BLOCK.defaultBlockState());
+            randomizerMultipart.onNeighborSignalChanged();
+
+            helper.runAfterDelay(3, () -> {
+                int[] signal = output.bundled();
+                helper.assertTrue(
+                        signal[5] == 255,
+                        "one-bit randomizer with a one-channel mask must choose that channel"
+                );
+                for (int channel = 0; channel < 16; channel++) {
+                    if (channel == 5) continue;
+                    helper.assertTrue(
+                            signal[channel] == 0,
+                            "bus randomizer must never emit outside its bundled mask"
+                    );
+                }
+                helper.succeed();
+            });
+        });
+    }
+
+    @GameTest(structure = EMPTY, maxTicks = 80)
+    public void busInputPanelResetClearsPressedChannels(GameTestHelper helper) {
+        BlockPos panelRel = new BlockPos(3, 2, 3);
+        BlockPos resetRel = panelRel.north();
+        BlockPos outputRel = panelRel.south();
+
+        helper.setBlock(panelRel.below(), Blocks.STONE.defaultBlockState());
+        helper.setBlock(outputRel.below(), Blocks.STONE.defaultBlockState());
+        helper.setBlock(panelRel, PRContent.MULTIPART.defaultBlockState());
+        helper.setBlock(outputRel, PRContent.MULTIPART.defaultBlockState());
+
+        MultipartBlockEntity panelMultipart = multipart(helper, panelRel);
+        MultipartBlockEntity outputMultipart = multipart(helper, outputRel);
+
+        GatePart panel = new GatePart(
+                GateType.BUS_INPUT_PANEL,
+                Direction.DOWN.ordinal(),
+                0
+        );
+        WirePart output = new WirePart(
+                requireWire("neutral_bundled_wire"),
+                Direction.DOWN.ordinal()
+        );
+
+        helper.assertTrue(panelMultipart.add(panel), "failed to add bus input panel");
+        helper.assertTrue(outputMultipart.add(output), "failed to add output bundled cable");
+
+        panel.togglePanelBit(9);
+        panelMultipart.markPartChanged();
+
+        helper.runAfterDelay(3, () -> {
+            helper.assertTrue(
+                    output.bundled()[9] == 255,
+                    "pressed panel channel must reach bundled output before reset"
+            );
+
+            helper.setBlock(resetRel, Blocks.REDSTONE_BLOCK.defaultBlockState());
+            panelMultipart.onNeighborSignalChanged();
+
+            helper.runAfterDelay(3, () -> {
+                helper.assertTrue(
+                        panel.panelMask() == 0,
+                        "panel reset input must clear the pressed-channel mask"
+                );
+                helper.assertTrue(
+                        output.bundled()[9] == 0,
+                        "cleared panel channel must disappear from bundled output"
+                );
+                helper.succeed();
+            });
+        });
+    }
+
     private static Rig line(
             GameTestHelper helper,
             String firstId,
