@@ -63,6 +63,7 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
             boolean powered,
             int wireSignal,
             int connections,
+            int connectionData,
             GateType gateType,
             int gateShape,
             int gateRotation,
@@ -108,6 +109,7 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
                 boolean powered = wire.spec().family() == WireFamily.BUNDLED
                         ? bundledPowered(wire.bundled())
                         : wire.signal() > 0;
+                int connectionData = blockEntity.visualWireConnectionData(wire);
                 out.add(new Visual(
                         true,
                         part.slot(),
@@ -115,7 +117,8 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
                         wire.spec().color(),
                         powered,
                         wire.signal(),
-                        blockEntity.visualWireConnections(wire),
+                        connectionData & 0x3F,
+                        connectionData,
                         null,
                         0, 0, 0, 0,
                         false,
@@ -139,6 +142,7 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
                         null,
                         -1,
                         (gate.state() & 0xF0) != 0,
+                        0,
                         0,
                         0,
                         gate.type(),
@@ -235,14 +239,18 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
                                 : part.family == WireFamily.INSULATED
                                         ? .1875F
                                         : .125F;
-                        RenderGeometry.wireFace(
+                        int thickness = part.family == WireFamily.BUNDLED
+                                ? 2
+                                : part.family == WireFamily.INSULATED
+                                        ? 1
+                                        : 0;
+                        ProjectRedFaceWireModel.render(
                                 consumer,
                                 pose,
                                 state.lightCoords,
                                 Direction.values()[part.slot],
-                                width,
-                                depth,
-                                part.connections,
+                                thickness,
+                                part.connectionData,
                                 wireTint(part)
                         );
                     }
