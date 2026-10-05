@@ -540,6 +540,90 @@ public final class ProjectRedGameTests {
         helper.succeed();
     }
 
+
+    @GameTest(structure = EMPTY, maxTicks = 60)
+    public void repeaterHonorsConfiguredProjectRedDelay(GameTestHelper helper) {
+        BlockPos gateRel = new BlockPos(3, 2, 3);
+        BlockPos inputRel = gateRel.south();
+
+        helper.setBlock(gateRel.below(), Blocks.STONE.defaultBlockState());
+        helper.setBlock(gateRel, PRContent.MULTIPART.defaultBlockState());
+
+        MultipartBlockEntity multipart = multipart(helper, gateRel);
+        GatePart repeater = new GatePart(
+                GateType.REPEATER,
+                Direction.DOWN.ordinal(),
+                0
+        );
+        repeater.cycleShape(); // ProjectRed shape 1 = 4 ticks.
+        helper.assertTrue(repeater.delay() == 4, "shape 1 repeater must use 4-tick delay");
+        helper.assertTrue(multipart.add(repeater), "failed to add repeater");
+
+        helper.setBlock(inputRel, Blocks.REDSTONE_BLOCK.defaultBlockState());
+        multipart.onNeighborSignalChanged();
+
+        helper.assertTrue(
+                multipart.vanillaSignal(Direction.NORTH) == 0,
+                "repeater output must remain low immediately after input"
+        );
+
+        helper.runAfterDelay(3, () ->
+                helper.assertTrue(
+                        multipart.vanillaSignal(Direction.NORTH) == 0,
+                        "4-tick repeater must still be low before its scheduled tick"
+                )
+        );
+
+        helper.runAfterDelay(5, () -> {
+            helper.assertTrue(
+                    multipart.vanillaSignal(Direction.NORTH) == 15,
+                    "4-tick repeater must be high after its configured delay"
+            );
+            helper.succeed();
+        });
+    }
+
+    @GameTest(structure = EMPTY, maxTicks = 60)
+    public void busConverterReverseModeOutputsHighestBundledChannel(GameTestHelper helper) {
+        BlockPos panelRel = new BlockPos(3, 2, 2);
+        BlockPos converterRel = panelRel.south();
+
+        helper.setBlock(panelRel.below(), Blocks.STONE.defaultBlockState());
+        helper.setBlock(converterRel.below(), Blocks.STONE.defaultBlockState());
+        helper.setBlock(panelRel, PRContent.MULTIPART.defaultBlockState());
+        helper.setBlock(converterRel, PRContent.MULTIPART.defaultBlockState());
+
+        MultipartBlockEntity panelMultipart = multipart(helper, panelRel);
+        MultipartBlockEntity converterMultipart = multipart(helper, converterRel);
+
+        GatePart panel = new GatePart(
+                GateType.BUS_INPUT_PANEL,
+                Direction.DOWN.ordinal(),
+                0
+        );
+        GatePart converter = new GatePart(
+                GateType.BUS_CONVERTER,
+                Direction.DOWN.ordinal(),
+                0
+        );
+        converter.cycleShape(); // shape 1 = bundled -> analog
+
+        helper.assertTrue(panelMultipart.add(panel), "failed to add bus input panel");
+        helper.assertTrue(converterMultipart.add(converter), "failed to add bus converter");
+
+        panel.togglePanelBit(7);
+        panelMultipart.markPartChanged();
+        converterMultipart.onNeighborSignalChanged();
+
+        helper.runAfterDelay(5, () -> {
+            helper.assertTrue(
+                    converterMultipart.vanillaSignal(Direction.SOUTH) == 7,
+                    "reverse bus converter must output the highest active bundled channel as analog redstone"
+            );
+            helper.succeed();
+        });
+    }
+
     private static Rig line(
             GameTestHelper helper,
             String firstId,
