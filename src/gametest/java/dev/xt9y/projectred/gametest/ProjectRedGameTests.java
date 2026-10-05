@@ -1311,7 +1311,22 @@ public final class ProjectRedGameTests {
                     sensor.outputLocal(2) == expected,
                     "ProjectRed rain sensor must follow vanilla rain and sky visibility"
             );
-            helper.succeed();
+
+            // RainSensor does not use output-side feedback upstream. External
+            // power on local side 2 must not enter its low input nibble.
+            helper.setBlock(
+                    gateRel.south(),
+                    Blocks.REDSTONE_BLOCK.defaultBlockState()
+            );
+            multipart.onNeighborSignalChanged();
+
+            helper.runAfterDelay(6, () -> {
+                helper.assertTrue(
+                        (sensor.state() & 0xF) == 0,
+                        "rain sensor must not sample feedback from its output side"
+                );
+                helper.succeed();
+            });
         });
     }
 
