@@ -715,6 +715,74 @@ final class RenderGeometry {
         if ((bits & 0x80) != 0) surfaceRect(c,pose,light,attachment,rotation,u1-t*1.2F,v1-t*1.2F,u1,v1,.145F,rgb);
     }
 
+    static void gatePanelLights(
+            VertexConsumer c,
+            PoseStack.Pose pose,
+            int light,
+            Direction attachment,
+            int rotation,
+            int mask,
+            float centerX,
+            float centerZ,
+            boolean rotate180,
+            boolean reflect
+    ) {
+        if (reflect) centerX = 1.0F - centerX;
+
+        float cell = 1.0F / 16.0F;
+        float startX = centerX - 2.0F * cell;
+        float startZ = centerZ - 2.0F * cell;
+        float inset = .006F;
+
+        for (int bit = 0; bit < 16; bit++) {
+            if ((mask & (1 << bit)) == 0) continue;
+
+            int visualBit = rotate180 ? 15 - bit : bit;
+            int row = visualBit / 4;
+            int col = visualBit % 4;
+
+            float x0 = startX + col * cell + inset;
+            float z0 = startZ + row * cell + inset;
+            float x1 = startX + (col + 1) * cell - inset;
+            float z1 = startZ + (row + 1) * cell - inset;
+
+            surfaceRect(
+                    c, pose, light,
+                    attachment, rotation,
+                    x0, z0, x1, z1,
+                    .314F
+            );
+        }
+    }
+
+    static void gateSignalBar(
+            VertexConsumer c,
+            PoseStack.Pose pose,
+            int light,
+            Direction attachment,
+            int rotation,
+            int level,
+            boolean inverted,
+            boolean reflect
+    ) {
+        level = Math.max(0, Math.min(15, level));
+        if (level == 0) return;
+
+        float centerX = .5F;
+        if (reflect) centerX = 1.0F - centerX;
+        float fraction = level / 15.0F;
+        float z0 = inverted ? .75F - .5F * fraction : .25F;
+        float z1 = inverted ? .75F : .25F + .5F * fraction;
+
+        surfaceRect(
+                c, pose, light,
+                attachment, rotation,
+                centerX - .035F, z0,
+                centerX + .035F, z1,
+                .377F
+        );
+    }
+
     private static void surfaceRect(
             VertexConsumer c,
             PoseStack.Pose pose,
