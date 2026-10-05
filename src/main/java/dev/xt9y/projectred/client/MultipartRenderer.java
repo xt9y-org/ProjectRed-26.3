@@ -498,8 +498,11 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
                 torch(state,poseStack,collector,order,p,attachment,8,3,6,(p.gateState & 0x10) != 0,reflect);
             }
             case BUS_TRANSCEIVER -> {
-                mesh(state,poseStack,collector,order,p,attachment,
-                        "array/busxcvr",.5F,0,.5F,1,0,BUS_XCVR,reflect);
+                cableMesh(
+                        state,poseStack,collector,order,p,attachment,
+                        "array/busxcvr",BUS_XCVR,reflect,
+                        10.0F / 32.0F,14.0F / 32.0F
+                );
                 panelBase(state,poseStack,collector,order,p,attachment,4,8,false,BUS_XCVR,reflect);
                 panelBase(state,poseStack,collector,order,p,attachment,12,8,true,BUS_XCVR,reflect);
                 signalPanel(
@@ -549,8 +552,11 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
                 );
             }
             case BUS_RANDOMIZER -> {
-                mesh(state,poseStack,collector,order,p,attachment,
-                        "array/busrand",.5F,0,.5F,1,0,BUS_RANDOMIZER,reflect);
+                cableMesh(
+                        state,poseStack,collector,order,p,attachment,
+                        "array/busrand",BUS_RANDOMIZER,reflect,
+                        7.0F / 32.0F,12.0F / 32.0F
+                );
                 panelBase(state,poseStack,collector,order,p,attachment,8,8,true,BUS_XCVR,reflect);
                 signalPanel(
                         state,poseStack,collector,order,p,attachment,
@@ -562,16 +568,22 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
                 );
             }
             case BUS_CONVERTER -> {
-                mesh(state,poseStack,collector,order,p,attachment,
-                        "array/busconv",.5F,0,.5F,1,0,BUS_CONVERTER,reflect);
+                cableMesh(
+                        state,poseStack,collector,order,p,attachment,
+                        "array/busconv",BUS_CONVERTER,reflect,
+                        7.0F / 32.0F,12.0F / 32.0F
+                );
                 mesh(state,poseStack,collector,order,p,attachment,
                         "array/signalpanel",.5F,0,.5F,1,0,BUS_CONVERTER,reflect);
                 int level = p.gateShape == 0 ? p.gateState2 & 15 : highestBit(p.bundleInput0);
                 analogBar(state,poseStack,collector,order,p,attachment,level,reflect);
             }
             case BUS_INPUT_PANEL -> {
-                mesh(state,poseStack,collector,order,p,attachment,
-                        "array/businput",.5F,0,.5F,1,0,BUS_INPUT,reflect);
+                cableMesh(
+                        state,poseStack,collector,order,p,attachment,
+                        "array/businput",BUS_INPUT,reflect,
+                        16.0F / 32.0F,16.0F / 32.0F
+                );
 
                 collector.order(order[0]++).submitCustomGeometry(
                         poseStack,
@@ -610,8 +622,11 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
                 torch(state,poseStack,collector,order,p,attachment,8,2,8,high,reflect);
             }
             case SEGMENT_DISPLAY -> {
-                mesh(state,poseStack,collector,order,p,attachment,
-                        "array/segbus",.5F,0,.5F,1,0,SEGMENT_BASE,reflect);
+                cableMesh(
+                        state,poseStack,collector,order,p,attachment,
+                        "array/segbus",SEGMENT_BASE,reflect,
+                        9.0F / 32.0F,16.5F / 32.0F
+                );
                 segmentDisplay(
                         state,
                         poseStack,
@@ -1129,6 +1144,40 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
                 rotate ? (float) Math.PI : 0.0F,
                 texture,
                 reflect
+        );
+    }
+
+    private static void cableMesh(
+            State state,
+            PoseStack poseStack,
+            SubmitNodeCollector collector,
+            int[] order,
+            Visual p,
+            Direction attachment,
+            String model,
+            Identifier texture,
+            boolean reflect,
+            float uCenter,
+            float vCenter
+    ) {
+        collector.order(order[0]++).submitCustomGeometry(
+                poseStack,
+                RenderTypes.entityCutout(texture),
+                (pose, consumer) -> ProjectRedObjModel.get(model)
+                        .renderBundledCable(
+                                consumer,
+                                pose,
+                                state.lightCoords,
+                                attachment,
+                                p.gateRotation,
+                                .5F,
+                                0.0F,
+                                .5F,
+                                reflect,
+                                0xFFFFFF,
+                                uCenter,
+                                vCenter
+                        )
         );
     }
 
