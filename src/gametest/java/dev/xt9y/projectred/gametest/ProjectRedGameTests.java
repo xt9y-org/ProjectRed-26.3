@@ -266,6 +266,167 @@ public final class ProjectRedGameTests {
         });
     }
 
+
+    @GameTest(structure = EMPTY, maxTicks = 60)
+    public void busTransceiverRoutesBundledBusWithSideControl(GameTestHelper helper) {
+        BlockPos gateRel = new BlockPos(4, 2, 4);
+        BlockPos inputCableRel = gateRel.south();
+        BlockPos sourceWireRel = inputCableRel.south();
+        BlockPos sourcePowerRel = sourceWireRel.south();
+        BlockPos outputCableRel = gateRel.north();
+        BlockPos outputWireRel = outputCableRel.north();
+        BlockPos controlRel = gateRel.east();
+
+        for (BlockPos pos : new BlockPos[] {
+                gateRel, inputCableRel, sourceWireRel,
+                outputCableRel, outputWireRel
+        }) {
+            helper.setBlock(pos.below(), Blocks.STONE.defaultBlockState());
+            helper.setBlock(pos, PRContent.MULTIPART.defaultBlockState());
+        }
+
+        helper.setBlock(sourcePowerRel, Blocks.REDSTONE_BLOCK.defaultBlockState());
+        helper.setBlock(controlRel, Blocks.REDSTONE_BLOCK.defaultBlockState());
+
+        MultipartBlockEntity gateMultipart = multipart(helper, gateRel);
+        MultipartBlockEntity inputMultipart = multipart(helper, inputCableRel);
+        MultipartBlockEntity sourceMultipart = multipart(helper, sourceWireRel);
+        MultipartBlockEntity outputMultipart = multipart(helper, outputCableRel);
+        MultipartBlockEntity sinkMultipart = multipart(helper, outputWireRel);
+
+        GatePart transceiver = new GatePart(
+                GateType.BUS_TRANSCEIVER,
+                Direction.DOWN.ordinal(),
+                0
+        );
+        WirePart inputCable = new WirePart(
+                requireWire("neutral_bundled_wire"),
+                Direction.DOWN.ordinal()
+        );
+        WirePart sourceWire = new WirePart(
+                requireWire("red_insulated_wire"),
+                Direction.DOWN.ordinal()
+        );
+        WirePart outputCable = new WirePart(
+                requireWire("neutral_bundled_wire"),
+                Direction.DOWN.ordinal()
+        );
+        WirePart sinkWire = new WirePart(
+                requireWire("red_insulated_wire"),
+                Direction.DOWN.ordinal()
+        );
+
+        helper.assertTrue(gateMultipart.add(transceiver), "failed to add bus transceiver");
+        helper.assertTrue(inputMultipart.add(inputCable), "failed to add input bundled cable");
+        helper.assertTrue(sourceMultipart.add(sourceWire), "failed to add source insulated wire");
+        helper.assertTrue(outputMultipart.add(outputCable), "failed to add output bundled cable");
+        helper.assertTrue(sinkMultipart.add(sinkWire), "failed to add sink insulated wire");
+
+        sourceMultipart.onNeighborSignalChanged();
+        gateMultipart.onNeighborSignalChanged();
+
+        helper.runAfterDelay(4, () -> {
+            int red = net.minecraft.world.item.DyeColor.RED.getId();
+            helper.assertTrue(
+                    inputCable.bundled()[red] > 0,
+                    "input bus must carry the red insulated channel"
+            );
+            helper.assertTrue(
+                    outputCable.bundled()[red] > 0,
+                    "east control input must route south bundled input to north output"
+            );
+            helper.assertTrue(
+                    sinkWire.signal() > 0,
+                    "routed bundled channel must feed matching insulated wire"
+            );
+            helper.succeed();
+        });
+    }
+
+    @GameTest(structure = EMPTY, maxTicks = 60)
+    public void comparatorKeepsTwoTickAnalogTransition(GameTestHelper helper) {
+        BlockPos gateRel = new BlockPos(3, 2, 3);
+        BlockPos backRel = gateRel.south();
+        BlockPos sideRel = gateRel.east();
+
+        helper.setBlock(gateRel.below(), Blocks.STONE.defaultBlockState());
+        helper.setBlock(gateRel, PRContent.MULTIPART.defaultBlockState());
+
+        MultipartBlockEntity multipart = multipart(helper, gateRel);
+        GatePart comparator = new GatePart(
+                GateType.COMPARATOR,
+                Direction.DOWN.ordinal(),
+                0
+        );
+        helper.assertTrue(multipart.add(comparator), "failed to add comparator");
+
+        helper.setBlock(backRel, Blocks.REDSTONE_BLOCK.defaultBlockState());
+        multipart.onNeighborSignalChanged();
+
+        helper.assertTrue(
+                multipart.vanillaSignal(Direction.NORTH) == 0,
+                "comparator output must not update before its scheduled transition"
+        );
+
+        helper.runAfterDelay(3, () -> {
+            helper.assertTrue(
+                    multipart.vanillaSignal(Direction.NORTH) == 15,
+                    "compare-mode comparator must reproduce back analog level 15"
+            );
+
+            helper.setBlock(sideRel, Blocks.REDSTONE_BLOCK.defaultBlockState());
+            multipart.onNeighborSignalChanged();
+
+            helper.runAfterDelay(3, () -> {
+                helper.assertTrue(
+                        multipart.vanillaSignal(Direction.NORTH) == 0,
+                        "equal side input must suppress compare-mode output"
+                );
+                helper.succeed();
+            });
+        });
+    }
+
+    @GameTest(structure = EMPTY, maxTicks = 40)
+    public void redAlloyWireWrapsAroundOpenOuterCorner(GameTestHelper helper) {
+        BlockPos topRel = new BlockPos(3, 3, 3);
+        BlockPos supportRel = topRel.below();
+        BlockPos cornerRel = topRel.east().below();
+        BlockPos sourceRel = topRel.west();
+
+        helper.setBlock(supportRel, Blocks.STONE.defaultBlockState());
+        helper.setBlock(sourceRel, Blocks.REDSTONE_BLOCK.defaultBlockState());
+        helper.setBlock(topRel, PRContent.MULTIPART.defaultBlockState());
+        helper.setBlock(cornerRel, PRContent.MULTIPART.defaultBlockState());
+
+        MultipartBlockEntity top = multipart(helper, topRel);
+        MultipartBlockEntity corner = multipart(helper, cornerRel);
+
+        WirePart topWire = new WirePart(
+                requireWire("red_alloy_wire"),
+                Direction.DOWN.ordinal()
+        );
+        WirePart cornerWire = new WirePart(
+                requireWire("red_alloy_wire"),
+                Direction.WEST.ordinal()
+        );
+
+        helper.assertTrue(top.add(topWire), "failed to add top red-alloy wire");
+        helper.assertTrue(corner.add(cornerWire), "failed to add corner red-alloy wire");
+
+        top.onNeighborSignalChanged();
+
+        helper.assertTrue(
+                topWire.signal() == 255,
+                "top wire should be fully powered by adjacent redstone block"
+        );
+        helper.assertTrue(
+                cornerWire.signal() == 254,
+                "outer-corner wire must connect around the support block with one-step attenuation"
+        );
+        helper.succeed();
+    }
+
     private static Rig line(
             GameTestHelper helper,
             String firstId,
