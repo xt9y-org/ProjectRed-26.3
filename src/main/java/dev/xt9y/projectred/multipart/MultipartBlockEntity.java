@@ -693,7 +693,9 @@ public final class MultipartBlockEntity extends BlockEntity {
 
     private int internalRedwireInput(WirePart receiver) {
         int max = 0;
-        for (Part p : parts()) {
+        for (int partIndex = 0; partIndex <= Part.CENTER_SLOT; partIndex++) {
+            Part p = part(partIndex);
+            if (p == null) continue;
             if (p == receiver || !internallyTouches(receiver, p)) continue;
 
             if (p instanceof WirePart other) {
@@ -850,7 +852,9 @@ public final class MultipartBlockEntity extends BlockEntity {
 
     private int[] internalBundledInput(WirePart receiver) {
         int[] out = new int[16];
-        for (Part p : parts()) {
+        for (int partIndex = 0; partIndex <= Part.CENTER_SLOT; partIndex++) {
+            Part p = part(partIndex);
+            if (p == null) continue;
             if (p == receiver || !internallyTouches(receiver, p)) continue;
 
             if (p instanceof WirePart other && receiver.canConnect(other)) {
@@ -897,7 +901,9 @@ public final class MultipartBlockEntity extends BlockEntity {
         }
 
         int max = 0;
-        for (Part p : parts()) {
+        for (int partIndex = 0; partIndex <= Part.CENTER_SLOT; partIndex++) {
+            Part p = part(partIndex);
+            if (p == null) continue;
             if (!partConnectsToward(p, toward)) continue;
 
             if (p instanceof WirePart wire) {
@@ -980,7 +986,9 @@ public final class MultipartBlockEntity extends BlockEntity {
             return null;
         }
 
-        for (Part p : parts()) {
+        for (int partIndex = 0; partIndex <= Part.CENTER_SLOT; partIndex++) {
+            Part p = part(partIndex);
+            if (p == null) continue;
             if (!partConnectsToward(p, toward)) continue;
 
             if (p instanceof WirePart wire) {
@@ -1225,7 +1233,9 @@ public final class MultipartBlockEntity extends BlockEntity {
                         && receiver.canConnect(other);
             }
 
-            for (Part p : multipart.parts()) {
+            for (int partIndex = 0; partIndex <= Part.CENTER_SLOT; partIndex++) {
+                Part p = multipart.part(partIndex);
+                if (p == null) continue;
                 if (!partConnectsToward(p, direction.getOpposite())) continue;
 
                 if (p instanceof WirePart other) {
@@ -1800,7 +1810,9 @@ public final class MultipartBlockEntity extends BlockEntity {
             Direction expectedAttachment
     ) {
         int[] out = new int[16];
-        for (Part p : parts()) {
+        for (int partIndex = 0; partIndex <= Part.CENTER_SLOT; partIndex++) {
+            Part p = part(partIndex);
+            if (p == null) continue;
             if (p.center()
                     || Direction.values()[p.slot()] != expectedAttachment
                     || !partConnectsToward(p, toward)) {
@@ -1888,7 +1900,9 @@ public final class MultipartBlockEntity extends BlockEntity {
 
     public int rawSignal(Direction toward) {
         int max = 0;
-        for (Part p : parts()) {
+        for (int partIndex = 0; partIndex <= Part.CENTER_SLOT; partIndex++) {
+            Part p = part(partIndex);
+            if (p == null) continue;
             if (!partConnectsToward(p, toward)) continue;
 
             if (p instanceof WirePart wire
@@ -1903,7 +1917,9 @@ public final class MultipartBlockEntity extends BlockEntity {
 
     public int[] bundledSignal(Direction toward) {
         int[] out = new int[16];
-        for (Part p : parts()) {
+        for (int partIndex = 0; partIndex <= Part.CENTER_SLOT; partIndex++) {
+            Part p = part(partIndex);
+            if (p == null) continue;
             if (!partConnectsToward(p, toward)) continue;
 
             if (p instanceof WirePart wire) {
@@ -1920,7 +1936,9 @@ public final class MultipartBlockEntity extends BlockEntity {
     }
 
     public boolean canConnectVanillaRedstone(Direction toward) {
-        for (Part p : parts()) {
+        for (int partIndex = 0; partIndex <= Part.CENTER_SLOT; partIndex++) {
+            Part p = part(partIndex);
+            if (p == null) continue;
             if (p instanceof WirePart wire) {
                 if (wire.spec().family() != WireFamily.BUNDLED
                         && partConnectsToward(wire, toward)) {
@@ -1936,7 +1954,9 @@ public final class MultipartBlockEntity extends BlockEntity {
 
     public int vanillaSignal(Direction toward) {
         int max = 0;
-        for (Part p : parts()) {
+        for (int partIndex = 0; partIndex <= Part.CENTER_SLOT; partIndex++) {
+            Part p = part(partIndex);
+            if (p == null) continue;
             if (p instanceof WirePart wire
                     && wire.spec().family() != WireFamily.BUNDLED
                     && !RedwirePowerContext.suppressed()) {
@@ -1951,7 +1971,9 @@ public final class MultipartBlockEntity extends BlockEntity {
 
     public int directSignal(Direction toward) {
         int max = 0;
-        for (Part p : parts()) {
+        for (int partIndex = 0; partIndex <= Part.CENTER_SLOT; partIndex++) {
+            Part p = part(partIndex);
+            if (p == null) continue;
             if (p instanceof WirePart wire) {
                 if (RedwirePowerContext.suppressed()
                         || wire.spec().family() != WireFamily.RED_ALLOY
