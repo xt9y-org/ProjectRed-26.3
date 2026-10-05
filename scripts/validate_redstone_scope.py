@@ -112,19 +112,59 @@ for java_path in java_root.rglob("*.java"):
 
 # MultipartRenderer builds gate surface paths dynamically. Keep this explicit
 # so every one of the 34 Integration render paths is checked by CI.
-gate_surface_textures = {
-    "or-0", "nor-0", "not-0", "and-0", "nand-0", "xor-0", "xnor-0",
-    "buffer-0", "multiplexer-0", "pulse-0", "repeater-0", "rand-0",
-    "rslatch-0", "rslatch2-0", "toglatch-0", "translatch-0",
-    "lightsensor-0", "rainsensor-0", "time-0", "count-0", "statecell-0",
-    "sync-0", "busxcvr-0", "invcell-0", "buffcell-0", "comparator-0",
-    "andcell-0", "busrand1-0", "busrand2-0", "busconv-0", "businput-0",
-    "transparent-latch-cell-0", "decrand-0",
+gate_surface_variants = {
+    "or": 4,
+    "nor": 4,
+    "not": 4,
+    "and": 4,
+    "nand": 4,
+    "xor": 4,
+    "xnor": 5,
+    "buffer": 4,
+    "multiplexer": 6,
+    "pulse": 3,
+    "repeater": 2,
+    "rand": 7,
+    "rslatch": 2,
+    "rslatch2": 4,
+    "toglatch": 2,
+    "translatch": 5,
+    "lightsensor": 1,
+    "rainsensor": 1,
+    "time": 3,
+    "count": 2,
+    "statecell": 5,
+    "sync": 6,
+    "busxcvr": 2,
+    "invcell": 1,
+    "buffcell": 2,
+    "comparator": 4,
+    "andcell": 2,
+    "busrand1": 2,
+    "busrand2": 2,
+    "busconv": 3,
+    "businput": 1,
+    "transparent-latch-cell": 5,
+    "decrand": 6,
 }
 surface_dir = ASSETS / "textures/integration/surface"
-for texture in gate_surface_textures:
-    if not (surface_dir / f"{texture}.png").is_file():
-        errors.append(f"missing dynamic gate surface texture: {texture}")
+for base, count in gate_surface_variants.items():
+    for variant in range(count):
+        texture = f"{base}-{variant}"
+        if not (surface_dir / f"{texture}.png").is_file():
+            errors.append(f"missing dynamic gate surface texture: {texture}")
+
+# Dedicated non-surface gate faces used directly by renderer/item models.
+for texture in (
+    "textures/integration/block/base.png",
+    "textures/integration/block/null_cell.png",
+    "textures/integration/block/segment_display.png",
+    "textures/integration/block/segment_display_digit.png",
+    "textures/integration/block/wire_material_border.png",
+    "textures/integration/block/wire_material_on.png",
+):
+    if not (ASSETS / texture).is_file():
+        errors.append(f"missing dedicated gate renderer texture: {texture}")
 
 # All resource paths must be legal Minecraft identifiers.
 legal_path = re.compile(r"^[a-z0-9/._-]+$")
