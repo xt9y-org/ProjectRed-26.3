@@ -1757,6 +1757,45 @@ public final class ProjectRedGameTests {
         });
     }
 
+    @GameTest(structure = EMPTY, maxTicks = 30)
+    public void normallyHighGatesInitializeImmediately(GameTestHelper helper) {
+        GateType[] types = {
+                GateType.NOR,
+                GateType.NAND,
+                GateType.NOT,
+                GateType.XNOR
+        };
+        BlockPos[] positions = {
+                new BlockPos(1, 2, 2),
+                new BlockPos(3, 2, 2),
+                new BlockPos(5, 2, 2),
+                new BlockPos(7, 2, 2)
+        };
+
+        for (int i = 0; i < types.length; i++) {
+            BlockPos pos = positions[i];
+            helper.setBlock(pos.below(), Blocks.STONE.defaultBlockState());
+            helper.setBlock(pos, PRContent.MULTIPART.defaultBlockState());
+
+            MultipartBlockEntity multipart = multipart(helper, pos);
+            GatePart gate = new GatePart(
+                    types[i],
+                    Direction.DOWN.ordinal(),
+                    0
+            );
+            helper.assertTrue(
+                    multipart.add(gate),
+                    "failed to add normally-high gate " + types[i]
+            );
+            helper.assertTrue(
+                    multipart.vanillaSignal(Direction.NORTH) == 15,
+                    types[i] + " must expose its initial high output on placement"
+            );
+        }
+
+        helper.succeed();
+    }
+
     private static Rig line(
             GameTestHelper helper,
             String firstId,
