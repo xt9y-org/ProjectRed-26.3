@@ -100,7 +100,12 @@ public final class MultipartBlock extends BaseEntityBlock {
 
     @Override
     protected int getSignal(BlockState state, BlockGetter level, BlockPos pos, Direction direction) {
-        return level.getBlockEntity(pos) instanceof MultipartBlockEntity be ? be.vanillaSignal(direction) : 0;
+        // Vanilla redstone signal directions are expressed from the
+        // receiver toward this source. ProjectRed ports are stored as the
+        // natural outward direction from this multipart.
+        return level.getBlockEntity(pos) instanceof MultipartBlockEntity be
+                ? be.vanillaSignal(direction.getOpposite())
+                : 0;
     }
 
     @Override
@@ -111,7 +116,7 @@ public final class MultipartBlock extends BaseEntityBlock {
             Direction direction
     ) {
         return level.getBlockEntity(pos) instanceof MultipartBlockEntity be
-                ? be.directSignal(direction)
+                ? be.directSignal(direction.getOpposite())
                 : 0;
     }
 
