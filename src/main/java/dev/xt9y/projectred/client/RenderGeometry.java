@@ -968,8 +968,7 @@ final class RenderGeometry {
             float x1 = x0 + size;
             float z1 = z0 + size;
             float y1 = ((pressMask & 1 << bit) != 0 ? 2.5F : 3.0F) / 16.0F;
-            int rgb = net.minecraft.world.item.DyeColor.byId(bit)
-                    .getTextureDiffuseColor() & 0xFFFFFF;
+            int rgb = ProjectRedColors.rgb(bit);
 
             gateComponentBoxColor(
                     c, pose, light,
@@ -1076,8 +1075,7 @@ final class RenderGeometry {
             float z0 = start + row * cell + inset;
             float x1 = start + col * cell + size - inset;
             float z1 = start + row * cell + size - inset;
-            int rgb = net.minecraft.world.item.DyeColor.byId(bit)
-                    .getTextureDiffuseColor() & 0xFFFFFF;
+            int rgb = ProjectRedColors.rgb(bit);
 
             surfaceRect(
                     c, pose, light,
