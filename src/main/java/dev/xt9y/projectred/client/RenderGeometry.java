@@ -1098,20 +1098,48 @@ final class RenderGeometry {
             boolean reflect
     ) {
         level = Math.max(0, Math.min(15, level));
-        if (level == 0) return;
+        int length = level + 1;
 
         float centerX = .5F;
         if (reflect) centerX = 1.0F - centerX;
-        float fraction = level / 15.0F;
-        float z0 = inverted ? .75F - .5F * fraction : .25F;
-        float z1 = inverted ? .75F : .25F + .5F * fraction;
+
+        // Port of SignalBarModel. The background is the full 16-unit bar
+        // scaled by (1.5, 1.125); the red foreground uses signal+1 units.
+        float bgHalfWidth = .046875F;
+        float fgHalfWidth = .03125F;
+
+        float bgZ0;
+        float bgZ1;
+        float fgZ0;
+        float fgZ1;
+
+        if (inverted) {
+            bgZ0 = .412109375F;
+            bgZ1 = .693359375F;
+            fgZ0 = .421875F;
+            fgZ1 = .421875F + length / 64.0F;
+        } else {
+            bgZ0 = .4296875F;
+            bgZ1 = .7109375F;
+            fgZ0 = .5F + (12.0F - length) / 64.0F;
+            fgZ1 = .6875F;
+        }
 
         surfaceRect(
                 c, pose, light,
                 attachment, rotation,
-                centerX - .035F, z0,
-                centerX + .035F, z1,
-                .377F
+                centerX - bgHalfWidth, bgZ0,
+                centerX + bgHalfWidth, bgZ1,
+                12.01F / 32.0F,
+                0x535353
+        );
+        surfaceRect(
+                c, pose, light,
+                attachment, rotation,
+                centerX - fgHalfWidth, fgZ0,
+                centerX + fgHalfWidth, fgZ1,
+                12.02F / 32.0F,
+                0xEC0000
         );
     }
 
