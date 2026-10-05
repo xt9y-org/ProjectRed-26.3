@@ -28,6 +28,49 @@ final class RenderGeometry {
                 x1,y0,z0,0,1, x1,y1,z0,0,0, x1,y1,z1,1,0, x1,y0,z1,1,1);
     }
 
+    private static void boxColor(
+            VertexConsumer c,
+            PoseStack.Pose pose,
+            int light,
+            float x0,float y0,float z0,
+            float x1,float y1,float z1,
+            int rgb
+    ) {
+        faceColor(c,pose,light,0,1,0,
+                x0,y1,z0,0,0, x0,y1,z1,0,1, x1,y1,z1,1,1, x1,y1,z0,1,0,rgb);
+        faceColor(c,pose,light,0,-1,0,
+                x0,y0,z0,0,0, x1,y0,z0,1,0, x1,y0,z1,1,1, x0,y0,z1,0,1,rgb);
+        faceColor(c,pose,light,0,0,-1,
+                x0,y0,z0,0,1, x0,y1,z0,0,0, x1,y1,z0,1,0, x1,y0,z0,1,1,rgb);
+        faceColor(c,pose,light,0,0,1,
+                x1,y0,z1,0,1, x1,y1,z1,0,0, x0,y1,z1,1,0, x0,y0,z1,1,1,rgb);
+        faceColor(c,pose,light,-1,0,0,
+                x0,y0,z1,0,1, x0,y1,z1,0,0, x0,y1,z0,1,0, x0,y0,z0,1,1,rgb);
+        faceColor(c,pose,light,1,0,0,
+                x1,y0,z0,0,1, x1,y1,z0,0,0, x1,y1,z1,1,0, x1,y0,z1,1,1,rgb);
+    }
+
+    private static void facePartColor(
+            VertexConsumer c,
+            PoseStack.Pose pose,
+            int light,
+            Direction attachment,
+            float width,
+            float depth,
+            int rgb
+    ) {
+        float lo=.5F-width*.5F;
+        float hi=.5F+width*.5F;
+        switch(attachment){
+            case DOWN -> boxColor(c,pose,light,lo,0,lo,hi,depth,hi,rgb);
+            case UP -> boxColor(c,pose,light,lo,1-depth,lo,hi,1,hi,rgb);
+            case NORTH -> boxColor(c,pose,light,lo,lo,0,hi,hi,depth,rgb);
+            case SOUTH -> boxColor(c,pose,light,lo,lo,1-depth,hi,hi,1,rgb);
+            case WEST -> boxColor(c,pose,light,0,lo,lo,depth,hi,hi,rgb);
+            case EAST -> boxColor(c,pose,light,1-depth,lo,lo,1,hi,hi,rgb);
+        }
+    }
+
     static void facePart(
             VertexConsumer c,
             PoseStack.Pose pose,
@@ -527,9 +570,10 @@ final class RenderGeometry {
             Direction attachment,
             float width,
             float depth,
-            int connections
+            int connections,
+            int rgb
     ) {
-        facePart(c, pose, light, attachment, width, depth);
+        facePartColor(c, pose, light, attachment, width, depth, rgb);
 
         float half = width * .5F;
         float lo = .5F - half;
@@ -550,64 +594,54 @@ final class RenderGeometry {
 
             switch (attachment) {
                 case DOWN -> {
-                    if (direction == Direction.NORTH) box(c,pose,light,lo,0,0,hi,depth,.5F);
-                    if (direction == Direction.SOUTH) box(c,pose,light,lo,0,.5F,hi,depth,1);
-                    if (direction == Direction.WEST) box(c,pose,light,0,0,lo,.5F,depth,hi);
-                    if (direction == Direction.EAST) box(c,pose,light,.5F,0,lo,1,depth,hi);
+                    if (direction == Direction.NORTH) boxColor(c,pose,light,lo,0,0,hi,depth,.5F,rgb);
+                    if (direction == Direction.SOUTH) boxColor(c,pose,light,lo,0,.5F,hi,depth,1,rgb);
+                    if (direction == Direction.WEST) boxColor(c,pose,light,0,0,lo,.5F,depth,hi,rgb);
+                    if (direction == Direction.EAST) boxColor(c,pose,light,.5F,0,lo,1,depth,hi,rgb);
                 }
                 case UP -> {
-                    if (direction == Direction.NORTH) box(c,pose,light,lo,1-depth,0,hi,1,.5F);
-                    if (direction == Direction.SOUTH) box(c,pose,light,lo,1-depth,.5F,hi,1,1);
-                    if (direction == Direction.WEST) box(c,pose,light,0,1-depth,lo,.5F,1,hi);
-                    if (direction == Direction.EAST) box(c,pose,light,.5F,1-depth,lo,1,1,hi);
+                    if (direction == Direction.NORTH) boxColor(c,pose,light,lo,1-depth,0,hi,1,.5F,rgb);
+                    if (direction == Direction.SOUTH) boxColor(c,pose,light,lo,1-depth,.5F,hi,1,1,rgb);
+                    if (direction == Direction.WEST) boxColor(c,pose,light,0,1-depth,lo,.5F,1,hi,rgb);
+                    if (direction == Direction.EAST) boxColor(c,pose,light,.5F,1-depth,lo,1,1,hi,rgb);
                 }
                 case NORTH -> {
-                    if (direction == Direction.UP) box(c,pose,light,lo,.5F,0,hi,1,depth);
-                    if (direction == Direction.DOWN) box(c,pose,light,lo,0,0,hi,.5F,depth);
-                    if (direction == Direction.WEST) box(c,pose,light,0,lo,0,.5F,hi,depth);
-                    if (direction == Direction.EAST) box(c,pose,light,.5F,lo,0,1,hi,depth);
+                    if (direction == Direction.UP) boxColor(c,pose,light,lo,.5F,0,hi,1,depth,rgb);
+                    if (direction == Direction.DOWN) boxColor(c,pose,light,lo,0,0,hi,.5F,depth,rgb);
+                    if (direction == Direction.WEST) boxColor(c,pose,light,0,lo,0,.5F,hi,depth,rgb);
+                    if (direction == Direction.EAST) boxColor(c,pose,light,.5F,lo,0,1,hi,depth,rgb);
                 }
                 case SOUTH -> {
-                    if (direction == Direction.UP) box(c,pose,light,lo,.5F,1-depth,hi,1,1);
-                    if (direction == Direction.DOWN) box(c,pose,light,lo,0,1-depth,hi,.5F,1);
-                    if (direction == Direction.WEST) box(c,pose,light,0,lo,1-depth,.5F,hi,1);
-                    if (direction == Direction.EAST) box(c,pose,light,.5F,lo,1-depth,1,hi,1);
+                    if (direction == Direction.UP) boxColor(c,pose,light,lo,.5F,1-depth,hi,1,1,rgb);
+                    if (direction == Direction.DOWN) boxColor(c,pose,light,lo,0,1-depth,hi,.5F,1,rgb);
+                    if (direction == Direction.WEST) boxColor(c,pose,light,0,lo,1-depth,.5F,hi,1,rgb);
+                    if (direction == Direction.EAST) boxColor(c,pose,light,.5F,lo,1-depth,1,hi,1,rgb);
                 }
                 case WEST -> {
-                    if (direction == Direction.UP) box(c,pose,light,0,.5F,lo,depth,1,hi);
-                    if (direction == Direction.DOWN) box(c,pose,light,0,0,lo,depth,.5F,hi);
-                    if (direction == Direction.NORTH) box(c,pose,light,0,lo,0,depth,hi,.5F);
-                    if (direction == Direction.SOUTH) box(c,pose,light,0,lo,.5F,depth,hi,1);
+                    if (direction == Direction.UP) boxColor(c,pose,light,0,.5F,lo,depth,1,hi,rgb);
+                    if (direction == Direction.DOWN) boxColor(c,pose,light,0,0,lo,depth,.5F,hi,rgb);
+                    if (direction == Direction.NORTH) boxColor(c,pose,light,0,lo,0,depth,hi,.5F,rgb);
+                    if (direction == Direction.SOUTH) boxColor(c,pose,light,0,lo,.5F,depth,hi,1,rgb);
                 }
                 case EAST -> {
-                    if (direction == Direction.UP) box(c,pose,light,1-depth,.5F,lo,1,1,hi);
-                    if (direction == Direction.DOWN) box(c,pose,light,1-depth,0,lo,1,.5F,hi);
-                    if (direction == Direction.NORTH) box(c,pose,light,1-depth,lo,0,1,hi,.5F);
-                    if (direction == Direction.SOUTH) box(c,pose,light,1-depth,lo,.5F,1,hi,1);
+                    if (direction == Direction.UP) boxColor(c,pose,light,1-depth,.5F,lo,1,1,hi,rgb);
+                    if (direction == Direction.DOWN) boxColor(c,pose,light,1-depth,0,lo,1,.5F,hi,rgb);
+                    if (direction == Direction.NORTH) boxColor(c,pose,light,1-depth,lo,0,1,hi,.5F,rgb);
+                    if (direction == Direction.SOUTH) boxColor(c,pose,light,1-depth,lo,.5F,1,hi,1,rgb);
                 }
             }
         }
 
-        // RenderWire generates short opposite stubs for isolated wires and
-        // one-ended runs. They are part of ProjectRed's characteristic wire
-        // silhouette and prevent loose ends from looking like plain squares.
         if (connectionCount == 0) {
-            wireStub(
-                    c, pose, light, attachment,
-                    MultipartBlockEntity.localToWorld(attachment, 0, 1),
-                    width, depth
-            );
-            wireStub(
-                    c, pose, light, attachment,
-                    MultipartBlockEntity.localToWorld(attachment, 0, 3),
-                    width, depth
-            );
+            wireStub(c,pose,light,attachment,
+                    MultipartBlockEntity.localToWorld(attachment,0,1),
+                    width,depth,rgb);
+            wireStub(c,pose,light,attachment,
+                    MultipartBlockEntity.localToWorld(attachment,0,3),
+                    width,depth,rgb);
         } else if (connectionCount == 1 && onlyConnection != null) {
-            wireStub(
-                    c, pose, light, attachment,
-                    onlyConnection.getOpposite(),
-                    width, depth
-            );
+            wireStub(c,pose,light,attachment,onlyConnection.getOpposite(),
+                    width,depth,rgb);
         }
     }
 
@@ -618,7 +652,8 @@ final class RenderGeometry {
             Direction attachment,
             Direction direction,
             float width,
-            float depth
+            float depth,
+            int rgb
     ) {
         if (direction.getAxis() == attachment.getAxis()) return;
 
@@ -630,40 +665,40 @@ final class RenderGeometry {
 
         switch (attachment) {
             case DOWN -> {
-                if (direction == Direction.NORTH) box(c,pose,light,lo,0,q0,hi,depth,.5F);
-                if (direction == Direction.SOUTH) box(c,pose,light,lo,0,.5F,hi,depth,q1);
-                if (direction == Direction.WEST) box(c,pose,light,q0,0,lo,.5F,depth,hi);
-                if (direction == Direction.EAST) box(c,pose,light,.5F,0,lo,q1,depth,hi);
+                if (direction == Direction.NORTH) boxColor(c,pose,light,lo,0,q0,hi,depth,.5F,rgb);
+                if (direction == Direction.SOUTH) boxColor(c,pose,light,lo,0,.5F,hi,depth,q1,rgb);
+                if (direction == Direction.WEST) boxColor(c,pose,light,q0,0,lo,.5F,depth,hi,rgb);
+                if (direction == Direction.EAST) boxColor(c,pose,light,.5F,0,lo,q1,depth,hi,rgb);
             }
             case UP -> {
-                if (direction == Direction.NORTH) box(c,pose,light,lo,1-depth,q0,hi,1,.5F);
-                if (direction == Direction.SOUTH) box(c,pose,light,lo,1-depth,.5F,hi,1,q1);
-                if (direction == Direction.WEST) box(c,pose,light,q0,1-depth,lo,.5F,1,hi);
-                if (direction == Direction.EAST) box(c,pose,light,.5F,1-depth,lo,q1,1,hi);
+                if (direction == Direction.NORTH) boxColor(c,pose,light,lo,1-depth,q0,hi,1,.5F,rgb);
+                if (direction == Direction.SOUTH) boxColor(c,pose,light,lo,1-depth,.5F,hi,1,q1,rgb);
+                if (direction == Direction.WEST) boxColor(c,pose,light,q0,1-depth,lo,.5F,1,hi,rgb);
+                if (direction == Direction.EAST) boxColor(c,pose,light,.5F,1-depth,lo,q1,1,hi,rgb);
             }
             case NORTH -> {
-                if (direction == Direction.UP) box(c,pose,light,lo,.5F,0,hi,q1,depth);
-                if (direction == Direction.DOWN) box(c,pose,light,lo,q0,0,hi,.5F,depth);
-                if (direction == Direction.WEST) box(c,pose,light,q0,lo,0,.5F,hi,depth);
-                if (direction == Direction.EAST) box(c,pose,light,.5F,lo,0,q1,hi,depth);
+                if (direction == Direction.UP) boxColor(c,pose,light,lo,.5F,0,hi,q1,depth,rgb);
+                if (direction == Direction.DOWN) boxColor(c,pose,light,lo,q0,0,hi,.5F,depth,rgb);
+                if (direction == Direction.WEST) boxColor(c,pose,light,q0,lo,0,.5F,hi,depth,rgb);
+                if (direction == Direction.EAST) boxColor(c,pose,light,.5F,lo,0,q1,hi,depth,rgb);
             }
             case SOUTH -> {
-                if (direction == Direction.UP) box(c,pose,light,lo,.5F,1-depth,hi,q1,1);
-                if (direction == Direction.DOWN) box(c,pose,light,lo,q0,1-depth,hi,.5F,1);
-                if (direction == Direction.WEST) box(c,pose,light,q0,lo,1-depth,.5F,hi,1);
-                if (direction == Direction.EAST) box(c,pose,light,.5F,lo,1-depth,q1,hi,1);
+                if (direction == Direction.UP) boxColor(c,pose,light,lo,.5F,1-depth,hi,q1,1,rgb);
+                if (direction == Direction.DOWN) boxColor(c,pose,light,lo,q0,1-depth,hi,.5F,1,rgb);
+                if (direction == Direction.WEST) boxColor(c,pose,light,q0,lo,1-depth,.5F,hi,1,rgb);
+                if (direction == Direction.EAST) boxColor(c,pose,light,.5F,lo,1-depth,q1,hi,1,rgb);
             }
             case WEST -> {
-                if (direction == Direction.UP) box(c,pose,light,0,.5F,lo,depth,q1,hi);
-                if (direction == Direction.DOWN) box(c,pose,light,0,q0,lo,depth,.5F,hi);
-                if (direction == Direction.NORTH) box(c,pose,light,0,lo,q0,depth,hi,.5F);
-                if (direction == Direction.SOUTH) box(c,pose,light,0,lo,.5F,depth,hi,q1);
+                if (direction == Direction.UP) boxColor(c,pose,light,0,.5F,lo,depth,q1,hi,rgb);
+                if (direction == Direction.DOWN) boxColor(c,pose,light,0,q0,lo,depth,.5F,hi,rgb);
+                if (direction == Direction.NORTH) boxColor(c,pose,light,0,lo,q0,depth,hi,.5F,rgb);
+                if (direction == Direction.SOUTH) boxColor(c,pose,light,0,lo,.5F,depth,hi,q1,rgb);
             }
             case EAST -> {
-                if (direction == Direction.UP) box(c,pose,light,1-depth,.5F,lo,1,q1,hi);
-                if (direction == Direction.DOWN) box(c,pose,light,1-depth,q0,lo,1,.5F,hi);
-                if (direction == Direction.NORTH) box(c,pose,light,1-depth,lo,q0,1,hi,.5F);
-                if (direction == Direction.SOUTH) box(c,pose,light,1-depth,lo,.5F,1,hi,q1);
+                if (direction == Direction.UP) boxColor(c,pose,light,1-depth,.5F,lo,1,q1,hi,rgb);
+                if (direction == Direction.DOWN) boxColor(c,pose,light,1-depth,q0,lo,1,.5F,hi,rgb);
+                if (direction == Direction.NORTH) boxColor(c,pose,light,1-depth,lo,q0,1,hi,.5F,rgb);
+                if (direction == Direction.SOUTH) boxColor(c,pose,light,1-depth,lo,.5F,1,hi,q1,rgb);
             }
         }
     }
@@ -672,20 +707,19 @@ final class RenderGeometry {
             VertexConsumer c,
             PoseStack.Pose pose,
             int light,
-            int connections
+            int connections,
+            int rgb
     ) {
-        // BaseCenterWirePart uses 2/8 from center on every axis:
-        // a 0.25..0.75 center cube with equally wide connection arms.
-        box(c, pose, light, .25F,.25F,.25F, .75F,.75F,.75F);
+        boxColor(c,pose,light,.25F,.25F,.25F,.75F,.75F,.75F,rgb);
         for (Direction direction : Direction.values()) {
             if ((connections & (1 << direction.ordinal())) == 0) continue;
             switch (direction) {
-                case DOWN -> box(c,pose,light,.25F,0,.25F,.75F,.25F,.75F);
-                case UP -> box(c,pose,light,.25F,.75F,.25F,.75F,1,.75F);
-                case NORTH -> box(c,pose,light,.25F,.25F,0,.75F,.75F,.25F);
-                case SOUTH -> box(c,pose,light,.25F,.25F,.75F,.75F,.75F,1);
-                case WEST -> box(c,pose,light,0,.25F,.25F,.25F,.75F,.75F);
-                case EAST -> box(c,pose,light,.75F,.25F,.25F,1,.75F,.75F);
+                case DOWN -> boxColor(c,pose,light,.25F,0,.25F,.75F,.25F,.75F,rgb);
+                case UP -> boxColor(c,pose,light,.25F,.75F,.25F,.75F,1,.75F,rgb);
+                case NORTH -> boxColor(c,pose,light,.25F,.25F,0,.75F,.75F,.25F,rgb);
+                case SOUTH -> boxColor(c,pose,light,.25F,.25F,.75F,.75F,.75F,1,rgb);
+                case WEST -> boxColor(c,pose,light,0,.25F,.25F,.25F,.75F,.75F,rgb);
+                case EAST -> boxColor(c,pose,light,.75F,.25F,.25F,1,.75F,.75F,rgb);
             }
         }
     }
@@ -1214,6 +1248,28 @@ final class RenderGeometry {
             float[] v = p[i];
             vertex(c,pose,light,v[0],v[1],v[2],t[0],t[1],-nx,-ny,-nz);
         }
+    }
+
+    private static void faceColor(
+            VertexConsumer c, PoseStack.Pose pose, int light,
+            float nx,float ny,float nz,
+            float ax,float ay,float az,float au,float av,
+            float bx,float by,float bz,float bu,float bv,
+            float cx,float cy,float cz,float cu,float cv,
+            float dx,float dy,float dz,float du,float dv,
+            int rgb
+    ) {
+        int r=rgb>>16&0xFF;
+        int g=rgb>>8&0xFF;
+        int b=rgb&0xFF;
+        vertexColor(c,pose,light,ax,ay,az,au,av,nx,ny,nz,r,g,b);
+        vertexColor(c,pose,light,bx,by,bz,bu,bv,nx,ny,nz,r,g,b);
+        vertexColor(c,pose,light,cx,cy,cz,cu,cv,nx,ny,nz,r,g,b);
+        vertexColor(c,pose,light,dx,dy,dz,du,dv,nx,ny,nz,r,g,b);
+        vertexColor(c,pose,light,dx,dy,dz,du,dv,-nx,-ny,-nz,r,g,b);
+        vertexColor(c,pose,light,cx,cy,cz,cu,cv,-nx,-ny,-nz,r,g,b);
+        vertexColor(c,pose,light,bx,by,bz,bu,bv,-nx,-ny,-nz,r,g,b);
+        vertexColor(c,pose,light,ax,ay,az,au,av,-nx,-ny,-nz,r,g,b);
     }
 
     private static void face(
