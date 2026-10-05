@@ -749,7 +749,7 @@ public final class GatePart extends Part {
         state = state & 0xF | output << 4;
     }
 
-    private int delay() {
+    int delay() {
         return type == GateType.REPEATER
                 ? REPEATER_DELAYS[Math.min(shape, REPEATER_DELAYS.length - 1)]
                 : 2;
