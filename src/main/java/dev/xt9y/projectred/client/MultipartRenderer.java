@@ -343,7 +343,7 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
         collector.order(order[0]++).submitCustomGeometry(
                 poseStack,
                 RenderTypes.entityCutout(texture),
-                (pose, consumer) -> RenderGeometry.gateWireMask(
+                (pose, consumer) -> ProjectRedGateWireModel.render(
                         consumer,
                         pose,
                         state.lightCoords,
@@ -353,8 +353,7 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
                         wires.count(),
                         selectedMask,
                         border,
-                        wires.reflect(),
-                        .125F
+                        wires.reflect()
                 )
         );
     }
