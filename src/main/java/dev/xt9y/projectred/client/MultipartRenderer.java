@@ -428,11 +428,15 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
                 torch(state,poseStack,collector,order,p,attachment,14,8,8,high,reflect);
             }
             case LIGHT_SENSOR -> sensor(
-                    state,poseStack,collector,order,p,attachment,8,5.5F,
+                    state,poseStack,collector,order,p,attachment,
+                    "solar",8,5.5F,
                     p.gateShape == 1 ? SOLAR_SKY : p.gateShape == 2 ? SOLAR_BLOCK : SOLAR_DUAL,
                     reflect
             );
-            case RAIN_SENSOR -> sensor(state,poseStack,collector,order,p,attachment,8,6,RAIN_SENSOR,reflect);
+            case RAIN_SENSOR -> sensor(
+                    state,poseStack,collector,order,p,attachment,
+                    "rainsensor",8,6,RAIN_SENSOR,reflect
+            );
             case TIMER -> {
                 torch(state,poseStack,collector,order,p,attachment,8,3,6,(p.gateState & 0x10) != 0,reflect);
                 torch(state,poseStack,collector,order,p,attachment,8,8,12,false,reflect);
@@ -468,7 +472,10 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
                 torch(state,poseStack,collector,order,p,attachment,8,3,6,(p.gateState & 0x10) != 0,reflect);
             }
             case BUS_TRANSCEIVER -> {
-                component(state,poseStack,collector,order,p,attachment,8,8,.46F,.46F,.10F,BUS_XCVR,reflect);
+                mesh(state,poseStack,collector,order,p,attachment,
+                        "array/busxcvr",.5F,0,.5F,1,0,BUS_XCVR,reflect);
+                panelBase(state,poseStack,collector,order,p,attachment,4,8,false,BUS_XCVR,reflect);
+                panelBase(state,poseStack,collector,order,p,attachment,12,8,true,BUS_XCVR,reflect);
                 signalPanel(state,poseStack,collector,order,p,attachment,p.bundleInput0 | p.bundleOutput0,4,8,reflect);
                 signalPanel(state,poseStack,collector,order,p,attachment,p.bundleInput2 | p.bundleOutput2,12,8,reflect);
             }
@@ -495,16 +502,22 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
                 torch(state,poseStack,collector,order,p,attachment,8,8,6,p.arraySignalB == 0,reflect);
             }
             case BUS_RANDOMIZER -> {
-                component(state,poseStack,collector,order,p,attachment,8,8,.46F,.46F,.10F,BUS_RANDOMIZER,reflect);
+                mesh(state,poseStack,collector,order,p,attachment,
+                        "array/busrand",.5F,0,.5F,1,0,BUS_RANDOMIZER,reflect);
+                panelBase(state,poseStack,collector,order,p,attachment,8,8,true,BUS_XCVR,reflect);
                 signalPanel(state,poseStack,collector,order,p,attachment,p.bundleOutput0,8,8,reflect);
             }
             case BUS_CONVERTER -> {
-                component(state,poseStack,collector,order,p,attachment,8,8,.46F,.46F,.10F,BUS_CONVERTER,reflect);
+                mesh(state,poseStack,collector,order,p,attachment,
+                        "array/busconv",.5F,0,.5F,1,0,BUS_CONVERTER,reflect);
+                mesh(state,poseStack,collector,order,p,attachment,
+                        "array/signalpanel",.5F,0,.5F,1,0,BUS_CONVERTER,reflect);
                 int level = p.gateShape == 0 ? p.gateState2 & 15 : highestBit(p.bundleInput0);
                 analogBar(state,poseStack,collector,order,p,attachment,level,reflect);
             }
             case BUS_INPUT_PANEL -> {
-                component(state,poseStack,collector,order,p,attachment,8,8,.58F,.58F,.08F,BUS_INPUT,reflect);
+                mesh(state,poseStack,collector,order,p,attachment,
+                        "array/businput",.5F,0,.5F,1,0,BUS_INPUT,reflect);
                 if (p.panelMask != 0) {
                     collector.order(order[0]++).submitCustomGeometry(
                             poseStack,
@@ -529,6 +542,8 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
                 torch(state,poseStack,collector,order,p,attachment,8,2,8,high,reflect);
             }
             case SEGMENT_DISPLAY -> {
+                mesh(state,poseStack,collector,order,p,attachment,
+                        "array/segbus",.5F,0,.5F,1,0,SEGMENT_BASE,reflect);
                 component(state,poseStack,collector,order,p,attachment,8,8,.72F,.72F,.06F,SEGMENT_BASE,reflect);
                 if (p.bundledMask != 0) {
                     collector.order(order[0]++).submitCustomGeometry(
