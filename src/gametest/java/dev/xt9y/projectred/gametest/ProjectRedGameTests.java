@@ -1131,6 +1131,92 @@ public final class ProjectRedGameTests {
         });
     }
 
+    @GameTest(structure = EMPTY, maxTicks = 70)
+    public void timerEmitsProjectRedTwoTickPulseAfterDefaultPeriod(GameTestHelper helper) {
+        BlockPos gateRel = new BlockPos(3, 2, 3);
+
+        helper.setBlock(gateRel.below(), Blocks.STONE.defaultBlockState());
+        helper.setBlock(gateRel, PRContent.MULTIPART.defaultBlockState());
+
+        MultipartBlockEntity multipart = multipart(helper, gateRel);
+        GatePart timer = new GatePart(
+                GateType.TIMER,
+                Direction.DOWN.ordinal(),
+                0
+        );
+        helper.assertTrue(multipart.add(timer), "failed to add timer");
+
+        helper.runAfterDelay(36, () ->
+                helper.assertTrue(
+                        multipart.vanillaSignal(Direction.NORTH) == 0,
+                        "timer must remain low before the default 38-tick pointer expires"
+                )
+        );
+
+        helper.runAfterDelay(39, () ->
+                helper.assertTrue(
+                        multipart.vanillaSignal(Direction.NORTH) == 15,
+                        "timer must emit its pulse when the default pointer expires"
+                )
+        );
+
+        helper.runAfterDelay(42, () -> {
+            helper.assertTrue(
+                    multipart.vanillaSignal(Direction.NORTH) == 0,
+                    "timer pulse must clear after the two-tick scheduled interval"
+            );
+            helper.succeed();
+        });
+    }
+
+    @GameTest(structure = EMPTY, maxTicks = 50)
+    public void srLatchStoresTheLastAssertedSide(GameTestHelper helper) {
+        BlockPos gateRel = new BlockPos(3, 2, 3);
+        BlockPos rightRel = gateRel.east();
+        BlockPos leftRel = gateRel.west();
+
+        helper.setBlock(gateRel.below(), Blocks.STONE.defaultBlockState());
+        helper.setBlock(gateRel, PRContent.MULTIPART.defaultBlockState());
+
+        MultipartBlockEntity multipart = multipart(helper, gateRel);
+        GatePart latch = new GatePart(
+                GateType.SR_LATCH,
+                Direction.DOWN.ordinal(),
+                0
+        );
+        helper.assertTrue(multipart.add(latch), "failed to add SR latch");
+
+        helper.setBlock(rightRel, Blocks.REDSTONE_BLOCK.defaultBlockState());
+        multipart.onNeighborSignalChanged();
+
+        helper.runAfterDelay(3, () -> {
+            helper.setBlock(rightRel, Blocks.AIR.defaultBlockState());
+            multipart.onNeighborSignalChanged();
+
+            int northAfterRight = multipart.vanillaSignal(Direction.NORTH);
+            int southAfterRight = multipart.vanillaSignal(Direction.SOUTH);
+            helper.assertTrue(
+                    northAfterRight != southAfterRight,
+                    "SR latch must settle into one complementary output state"
+            );
+
+            helper.setBlock(leftRel, Blocks.REDSTONE_BLOCK.defaultBlockState());
+            multipart.onNeighborSignalChanged();
+
+            helper.runAfterDelay(6, () -> {
+                helper.setBlock(leftRel, Blocks.AIR.defaultBlockState());
+                multipart.onNeighborSignalChanged();
+
+                helper.assertTrue(
+                        multipart.vanillaSignal(Direction.NORTH) == southAfterRight
+                                && multipart.vanillaSignal(Direction.SOUTH) == northAfterRight,
+                        "asserting the opposite SR input must swap the stored outputs"
+                );
+                helper.succeed();
+            });
+        });
+    }
+
     private static Rig line(
             GameTestHelper helper,
             String firstId,
