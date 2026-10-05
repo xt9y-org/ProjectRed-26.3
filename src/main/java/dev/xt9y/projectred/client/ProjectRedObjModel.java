@@ -161,10 +161,10 @@ final class ProjectRedObjModel {
             boolean reflect,
             int rgb
     ) {
-        vertex(consumer,pose,light,a,right,down,normal,originX,originY,originZ,offsetX,offsetY,offsetZ,scaleXZ,cos,sin,reflect);
-        vertex(consumer,pose,light,b,right,down,normal,originX,originY,originZ,offsetX,offsetY,offsetZ,scaleXZ,cos,sin,reflect);
-        vertex(consumer,pose,light,c,right,down,normal,originX,originY,originZ,offsetX,offsetY,offsetZ,scaleXZ,cos,sin,reflect);
-        vertex(consumer,pose,light,d,right,down,normal,originX,originY,originZ,offsetX,offsetY,offsetZ,scaleXZ,cos,sin,reflect);
+        vertex(consumer,pose,light,a,right,down,normal,originX,originY,originZ,offsetX,offsetY,offsetZ,scaleXZ,cos,sin,reflect,rgb);
+        vertex(consumer,pose,light,b,right,down,normal,originX,originY,originZ,offsetX,offsetY,offsetZ,scaleXZ,cos,sin,reflect,rgb);
+        vertex(consumer,pose,light,c,right,down,normal,originX,originY,originZ,offsetX,offsetY,offsetZ,scaleXZ,cos,sin,reflect,rgb);
+        vertex(consumer,pose,light,d,right,down,normal,originX,originY,originZ,offsetX,offsetY,offsetZ,scaleXZ,cos,sin,reflect,rgb);
     }
 
     private void vertex(
