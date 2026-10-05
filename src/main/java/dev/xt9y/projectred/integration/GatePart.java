@@ -4,6 +4,8 @@ import dev.xt9y.projectred.core.BundledSignals;
 import dev.xt9y.projectred.multipart.MultipartBlockEntity;
 import dev.xt9y.projectred.multipart.Part;
 import java.util.Random;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.level.LightLayer;
 
 public final class GatePart extends Part {
@@ -39,6 +41,7 @@ public final class GatePart extends Part {
     private int bundleOutput2;
     private int bundleMask = 0xFFFF;
     private int pressMask;
+    private boolean tickSoundPending;
 
     public GatePart(GateType type, int slot, int rotation) {
         super(slot);
@@ -206,6 +209,7 @@ public final class GatePart extends Part {
     }
 
     public void adjustCounterMax(int delta) {
+        int oldMax = counterMax;
         int oldValue = counterValue;
         counterMax = clampAdd(counterMax, delta, 1, 32767);
         counterValue = Math.min(counterValue, counterMax);
@@ -216,30 +220,42 @@ public final class GatePart extends Part {
         if (counterValue != oldValue) {
             scheduleWithoutOwner();
         }
+        if (counterMax != oldMax) {
+            tickSoundPending = true;
+        }
     }
 
     public void adjustCounterIncrement(int delta) {
+        int old = counterIncrement;
         counterIncrement = clampAdd(
                 counterIncrement,
                 delta,
                 1,
                 counterMax
         );
+        if (counterIncrement != old) {
+            tickSoundPending = true;
+        }
     }
 
     public void adjustCounterDecrement(int delta) {
+        int old = counterDecrement;
         counterDecrement = clampAdd(
                 counterDecrement,
                 delta,
                 1,
                 counterMax
         );
+        if (counterDecrement != old) {
+            tickSoundPending = true;
+        }
     }
 
     public void activate() {
         if (type == GateType.TOGGLE_LATCH) {
             state2 = state2 == 0 ? 1 : 0;
             scheduleWithoutOwner();
+            tickSoundPending = true;
         } else if (type == GateType.REPEATER) {
             cycleShape();
         }
@@ -383,6 +399,11 @@ public final class GatePart extends Part {
         String before = encode();
         long time = owner.getLevel() == null ? 0 : owner.getLevel().getGameTime();
 
+        if (tickSoundPending) {
+            tickSoundPending = false;
+            playTickSound(owner);
+        }
+
         if (scheduledAt == 0) {
             // Interactions/config edits use zero as an owner-less scheduling
             // marker. Signal propagation can now evaluate this gate in the
@@ -460,6 +481,7 @@ public final class GatePart extends Part {
             pointerStart = -1;
             state = (state & 0xF) | 0xB0;
             schedule(owner, 2);
+            playTickSound(owner);
         }
     }
 
@@ -468,7 +490,11 @@ public final class GatePart extends Part {
         int step = (int) (owner.getLevel().getDefaultClockTime() % (timerPeriod * 4L) / timerPeriod);
         int out = 1 << step;
         if (shape == 1) out = flipMaskZ(out);
+        int oldOut = state >> 4;
         state = out << 4;
+        if (oldOut != out) {
+            playTickSound(owner);
+        }
     }
 
     private void tickArrayGate(MultipartBlockEntity owner) {
@@ -576,6 +602,7 @@ public final class GatePart extends Part {
                 if (high == 2 || high == 8) {
                     state2 = state2 == 0 ? 1 : 0;
                     schedule(owner, 2);
+                    playTickSound(owner);
                 }
                 state = state & 0xF0 | input;
                 return;
@@ -597,8 +624,12 @@ public final class GatePart extends Part {
                 int newInput = input;
                 if (shape == 1) newInput = flipMaskZ(newInput);
                 int high = newInput & ~oldInput;
+                int oldValue = counterValue;
                 if ((high & 2) != 0) counterValue = Math.min(counterMax, counterValue + counterIncrement);
                 if ((high & 8) != 0) counterValue = Math.max(0, counterValue - counterDecrement);
+                if (counterValue != oldValue) {
+                    playTickSound(owner);
+                }
                 if (newInput != oldInput) {
                     state = (state & 0xF0) | newInput;
                     schedule(owner, 2);
@@ -625,6 +656,7 @@ public final class GatePart extends Part {
                     state2 = 0;
                     state = (state & 0xF) | 0x10;
                     schedule(owner, 2);
+                    playTickSound(owner);
                 }
                 return;
             }
@@ -1050,6 +1082,23 @@ public final class GatePart extends Part {
         part.bundleMask = intAt(p, 20, 0xFFFF);
         part.pressMask = intAt(p, 21, 0);
         return part;
+    }
+
+    private static void playTickSound(
+            MultipartBlockEntity owner
+    ) {
+        if (owner.getLevel() == null || owner.getLevel().isClientSide()) {
+            return;
+        }
+
+        owner.getLevel().playSound(
+                null,
+                owner.getBlockPos(),
+                SoundEvents.LEVER_CLICK,
+                SoundSource.BLOCKS,
+                0.15F,
+                0.5F
+        );
     }
 
     private static int clampAdd(
