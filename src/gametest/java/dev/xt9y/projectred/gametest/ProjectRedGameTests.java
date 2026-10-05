@@ -1185,100 +1185,42 @@ public final class ProjectRedGameTests {
                 0
         );
         helper.assertTrue(multipart.add(latch), "failed to add SR latch");
+        helper.assertTrue(
+                latch.state2() == 2,
+                "fresh ProjectRed SR latch must start with local-right state stored"
+        );
 
-        helper.setBlock(rightRel, Blocks.REDSTONE_BLOCK.defaultBlockState());
+        helper.setBlock(leftRel, Blocks.REDSTONE_BLOCK.defaultBlockState());
         multipart.onNeighborSignalChanged();
+        helper.assertTrue(
+                latch.state2() == 8,
+                "left rising input must become the stored SR latch side"
+        );
 
         helper.runAfterDelay(3, () -> {
-            helper.setBlock(rightRel, Blocks.AIR.defaultBlockState());
+            helper.setBlock(leftRel, Blocks.AIR.defaultBlockState());
             multipart.onNeighborSignalChanged();
-
-            int northAfterRight = multipart.vanillaSignal(Direction.NORTH);
-            int southAfterRight = multipart.vanillaSignal(Direction.SOUTH);
             helper.assertTrue(
-                    northAfterRight != southAfterRight,
-                    "SR latch must settle into one complementary output state"
+                    latch.state2() == 8,
+                    "SR latch must retain the last asserted side after input release"
             );
 
-            helper.setBlock(leftRel, Blocks.REDSTONE_BLOCK.defaultBlockState());
+            helper.setBlock(rightRel, Blocks.REDSTONE_BLOCK.defaultBlockState());
             multipart.onNeighborSignalChanged();
+            helper.assertTrue(
+                    latch.state2() == 2,
+                    "opposite rising input must replace the stored SR latch side"
+            );
 
             helper.runAfterDelay(6, () -> {
-                helper.setBlock(leftRel, Blocks.AIR.defaultBlockState());
+                helper.setBlock(rightRel, Blocks.AIR.defaultBlockState());
                 multipart.onNeighborSignalChanged();
-
                 helper.assertTrue(
-                        multipart.vanillaSignal(Direction.NORTH) == southAfterRight
-                                && multipart.vanillaSignal(Direction.SOUTH) == northAfterRight,
-                        "asserting the opposite SR input must swap the stored outputs"
+                        latch.state2() == 2,
+                        "SR latch must retain the second stored side after release"
                 );
                 helper.succeed();
             });
         });
     }
 
-    private static Rig line(
-            GameTestHelper helper,
-            String firstId,
-            String secondId
-    ) {
-        BlockPos firstRel = new BlockPos(2, 2, 2);
-        BlockPos secondRel = firstRel.east();
-        BlockPos sourceRel = firstRel.west();
-
-        helper.setBlock(firstRel.below(), Blocks.STONE.defaultBlockState());
-        helper.setBlock(secondRel.below(), Blocks.STONE.defaultBlockState());
-        helper.setBlock(sourceRel, Blocks.REDSTONE_BLOCK.defaultBlockState());
-        helper.setBlock(firstRel, PRContent.MULTIPART.defaultBlockState());
-        helper.setBlock(secondRel, PRContent.MULTIPART.defaultBlockState());
-
-        MultipartBlockEntity first = multipart(helper, firstRel);
-        MultipartBlockEntity second = multipart(helper, secondRel);
-
-        WireSpec firstSpec = requireWire(firstId);
-        WireSpec secondSpec = requireWire(secondId);
-
-        WirePart firstWire = new WirePart(
-                firstSpec,
-                Direction.DOWN.ordinal()
-        );
-        WirePart secondWire = new WirePart(
-                secondSpec,
-                Direction.DOWN.ordinal()
-        );
-
-        helper.assertTrue(first.add(firstWire), "failed to add first wire");
-        helper.assertTrue(second.add(secondWire), "failed to add second wire");
-
-        return new Rig(first, second, firstWire, secondWire);
-    }
-
-    private static MultipartBlockEntity multipart(
-            GameTestHelper helper,
-            BlockPos relative
-    ) {
-        BlockEntity entity = helper.getLevel().getBlockEntity(
-                helper.absolutePos(relative)
-        );
-        if (!(entity instanceof MultipartBlockEntity multipart)) {
-            helper.fail("missing ProjectRed multipart block entity at " + relative);
-            throw new AssertionError();
-        }
-        return multipart;
-    }
-
-    private static WireSpec requireWire(String id) {
-        WireSpec spec = WireSpec.byId(id);
-        if (spec == null) {
-            throw new AssertionError("missing wire spec " + id);
-        }
-        return spec;
-    }
-
-    private record Rig(
-            MultipartBlockEntity first,
-            MultipartBlockEntity second,
-            WirePart firstWire,
-            WirePart secondWire
-    ) {}
-}

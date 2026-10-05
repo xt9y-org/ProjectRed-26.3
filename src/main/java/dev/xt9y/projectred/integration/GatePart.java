@@ -78,6 +78,10 @@ public final class GatePart extends Part {
         return state;
     }
 
+    public int state2() {
+        return state2;
+    }
+
     public boolean isArrayCell() {
         return switch (type) {
             case NULL_CELL, INVERT_CELL, BUFFER_CELL,
