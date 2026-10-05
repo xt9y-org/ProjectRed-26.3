@@ -17,7 +17,7 @@ import net.minecraft.core.Direction;
 
 final class ProjectRedObjModel {
     private record Ref(int position, int uv, int normal) {}
-    private record Face(Ref[] refs) {}
+    private record Face(String group, Ref[] refs) {}
 
     private static final Map<String, ProjectRedObjModel> CACHE = new ConcurrentHashMap<>();
 
@@ -76,6 +76,50 @@ final class ProjectRedObjModel {
             boolean reflect,
             int rgb
     ) {
+        renderFiltered(
+                consumer, pose, light, attachment, rotation,
+                offsetX, offsetY, offsetZ, scaleXZ, angleY, reflect,
+                rgb, null
+        );
+    }
+
+    void renderGroup(
+            VertexConsumer consumer,
+            PoseStack.Pose pose,
+            int light,
+            Direction attachment,
+            int rotation,
+            float offsetX,
+            float offsetY,
+            float offsetZ,
+            float scaleXZ,
+            float angleY,
+            boolean reflect,
+            int rgb,
+            String group
+    ) {
+        renderFiltered(
+                consumer, pose, light, attachment, rotation,
+                offsetX, offsetY, offsetZ, scaleXZ, angleY, reflect,
+                rgb, group
+        );
+    }
+
+    private void renderFiltered(
+            VertexConsumer consumer,
+            PoseStack.Pose pose,
+            int light,
+            Direction attachment,
+            int rotation,
+            float offsetX,
+            float offsetY,
+            float offsetZ,
+            float scaleXZ,
+            float angleY,
+            boolean reflect,
+            int rgb,
+            String group
+    ) {
         Direction right = MultipartBlockEntity.localToWorld(attachment, rotation, 1);
         Direction down = MultipartBlockEntity.localToWorld(attachment, rotation, 2);
         Direction normal = attachment.getOpposite();
@@ -88,6 +132,7 @@ final class ProjectRedObjModel {
         float sin = (float) Math.sin(angleY);
 
         for (Face face : faces) {
+            if (group != null && !group.equals(face.group)) continue;
             Ref[] refs = face.refs;
             if (refs.length < 3) continue;
 
@@ -268,6 +313,7 @@ final class ProjectRedObjModel {
             List<float[]> uvs = new ArrayList<>();
             List<float[]> normals = new ArrayList<>();
             List<Face> faces = new ArrayList<>();
+            String currentGroup = "";
 
             try (BufferedReader reader = new BufferedReader(
                     new InputStreamReader(stream, StandardCharsets.UTF_8)
@@ -277,7 +323,9 @@ final class ProjectRedObjModel {
                     line = line.trim();
                     if (line.isEmpty() || line.charAt(0) == '#') continue;
 
-                    if (line.startsWith("v ")) {
+                    if (line.startsWith("g ") || line.startsWith("o ")) {
+                        currentGroup = line.substring(2).trim();
+                    } else if (line.startsWith("v ")) {
                         String[] p = line.substring(2).trim().split("\\s+");
                         positions.add(new float[] {
                                 Float.parseFloat(p[0]),
@@ -308,7 +356,7 @@ final class ProjectRedObjModel {
                                     parseIndex(index, 2, normals.size())
                             );
                         }
-                        faces.add(new Face(refs));
+                        faces.add(new Face(currentGroup, refs));
                     }
                 }
             }
