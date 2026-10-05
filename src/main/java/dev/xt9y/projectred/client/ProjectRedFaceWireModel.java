@@ -61,15 +61,24 @@ final class ProjectRedFaceWireModel {
         }
 
         int side = attachment.ordinal();
+        int finalCorner = corner;
+        int finalStraight = straight;
+        int finalInternal = internal;
         int key = side
                 | (thickness << 3)
-                | (corner << 5)
-                | (straight << 9)
-                | (internal << 13);
+                | (finalCorner << 5)
+                | (finalStraight << 9)
+                | (finalInternal << 13);
 
         Quad[] model = CACHE.computeIfAbsent(
                 key,
-                ignored -> generate(side, thickness, corner, straight, internal)
+                ignored -> generate(
+                        side,
+                        thickness,
+                        finalCorner,
+                        finalStraight,
+                        finalInternal
+                )
         );
 
         Direction xAxis = MultipartBlockEntity.localToWorld(
