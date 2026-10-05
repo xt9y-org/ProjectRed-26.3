@@ -1,6 +1,7 @@
 {
   "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "projectred:integration/surface/toglatch-0"
+    "layer0": "projectred:integration/block/base",
+    "layer1": "projectred:integration/surface/toglatch-0"
   }
 }
