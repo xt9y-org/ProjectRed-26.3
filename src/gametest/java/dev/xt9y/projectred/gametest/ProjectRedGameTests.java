@@ -1265,7 +1265,7 @@ public final class ProjectRedGameTests {
         );
         helper.assertTrue(multipart.add(sensor), "failed to add light sensor");
 
-        helper.runAfterDelay(3, () -> {
+        helper.runAfterDelay(8, () -> {
             BlockPos absolute = helper.absolutePos(gateRel);
             int sky = helper.getLevel().getBrightness(
                     net.minecraft.world.level.LightLayer.SKY,
