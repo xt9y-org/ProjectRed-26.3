@@ -1097,7 +1097,7 @@ public final class MultipartBlockEntity extends BlockEntity {
         // ProjectRed array cells expose their raised redwire channel on
         // internal sides 1 and 3 at render height 10.0. Render connections
         // are straight gate-to-gate links only.
-        for (int local : new int[] {1, 3}) {
+        for (int local = 1; local <= 3; local += 2) {
             Direction direction = localToWorld(
                     attachment,
                     receiver.rotation(),
@@ -1116,7 +1116,7 @@ public final class MultipartBlockEntity extends BlockEntity {
             }
 
             Direction toward = direction.getOpposite();
-            for (int otherLocal : new int[] {1, 3}) {
+            for (int otherLocal = 1; otherLocal <= 3; otherLocal += 2) {
                 if (localToWorld(
                         attachment,
                         other.rotation(),
