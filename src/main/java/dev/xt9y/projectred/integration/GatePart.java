@@ -916,6 +916,7 @@ public final class GatePart extends Part {
             case BUS_TRANSCEIVER, BUS_RANDOMIZER -> 0xA;
             case BUS_CONVERTER -> shape == 0 ? 4 : 0;
             case BUS_INPUT_PANEL -> 1;
+            case AND_CELL, TRANSPARENT_LATCH_CELL -> 4;
             default -> 0;
         };
     }
