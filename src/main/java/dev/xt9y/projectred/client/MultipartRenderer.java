@@ -518,11 +518,25 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
             case BUS_INPUT_PANEL -> {
                 mesh(state,poseStack,collector,order,p,attachment,
                         "array/businput",.5F,0,.5F,1,0,BUS_INPUT,reflect);
+
+                collector.order(order[0]++).submitCustomGeometry(
+                        poseStack,
+                        RenderTypes.entityCutout(GATE_BASE),
+                        (pose, consumer) -> RenderGeometry.gateInputButtons(
+                                consumer,
+                                pose,
+                                state.lightCoords,
+                                attachment,
+                                p.gateRotation,
+                                p.panelMask
+                        )
+                );
+
                 if (p.panelMask != 0) {
                     collector.order(order[0]++).submitCustomGeometry(
                             poseStack,
-                            RenderTypes.entityCutout(WIRE_ON),
-                            (pose, consumer) -> RenderGeometry.panelButtons(
+                            RenderTypes.entityCutout(GATE_BASE),
+                            (pose, consumer) -> RenderGeometry.gateInputButtonLights(
                                     consumer,
                                     pose,
                                     0x00F000F0,
