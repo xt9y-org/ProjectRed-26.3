@@ -877,22 +877,24 @@ final class RenderGeometry {
             int light,
             Direction attachment,
             int rotation,
-            int mask,
+            int signalMask,
+            int disableMask,
             float centerX,
             float centerZ,
             boolean rotate180,
-            boolean reflect
+            boolean reflect,
+            int onColor,
+            int offColor,
+            int disableColor
     ) {
         if (reflect) centerX = 1.0F - centerX;
 
         float cell = 1.0F / 16.0F;
         float startX = centerX - 2.0F * cell;
         float startZ = centerZ - 2.0F * cell;
-        float inset = .006F;
+        float inset = .002F;
 
         for (int bit = 0; bit < 16; bit++) {
-            if ((mask & (1 << bit)) == 0) continue;
-
             int visualBit = rotate180 ? 15 - bit : bit;
             int row = visualBit / 4;
             int col = visualBit % 4;
@@ -902,11 +904,21 @@ final class RenderGeometry {
             float x1 = startX + (col + 1) * cell - inset;
             float z1 = startZ + (row + 1) * cell - inset;
 
+            int rgb;
+            if ((signalMask & 1 << bit) != 0) {
+                rgb = onColor;
+            } else if ((disableMask & 1 << bit) != 0) {
+                rgb = disableColor;
+            } else {
+                rgb = offColor;
+            }
+
             surfaceRect(
                     c, pose, light,
                     attachment, rotation,
                     x0, z0, x1, z1,
-                    .314F
+                    .314F,
+                    rgb
             );
         }
     }
