@@ -55,11 +55,14 @@ public final class MultipartBlockEntity extends BlockEntity {
         }
 
         boolean changed = false;
-        List<Integer> unsupported = new ArrayList<>();
+        int unsupportedMask = 0;
 
-        for (Part part : be.parts()) {
+        for (int slot = 0; slot <= Part.CENTER_SLOT; slot++) {
+            Part part = be.part(slot);
+            if (part == null) continue;
+
             if (!part.center() && !be.hasSupport(part)) {
-                unsupported.add(part.slot());
+                unsupportedMask |= 1 << slot;
                 continue;
             }
 
@@ -71,8 +74,10 @@ public final class MultipartBlockEntity extends BlockEntity {
             }
         }
 
-        for (int slot : unsupported) {
-            changed |= be.removeAndDrop(slot);
+        for (int slot = 0; slot < 6; slot++) {
+            if ((unsupportedMask & (1 << slot)) != 0) {
+                changed |= be.removeAndDrop(slot);
+            }
         }
 
         if (changed && level.getBlockEntity(pos) == be) {
@@ -91,11 +96,14 @@ public final class MultipartBlockEntity extends BlockEntity {
         handlingNeighborSignalChange = true;
         try {
             boolean changed = false;
-            List<Integer> unsupported = new ArrayList<>();
+            int unsupportedMask = 0;
 
-            for (Part part : parts()) {
+            for (int slot = 0; slot <= Part.CENTER_SLOT; slot++) {
+                Part part = part(slot);
+                if (part == null) continue;
+
                 if (!part.center() && !hasSupport(part)) {
-                    unsupported.add(part.slot());
+                    unsupportedMask |= 1 << slot;
                     continue;
                 }
 
@@ -107,8 +115,10 @@ public final class MultipartBlockEntity extends BlockEntity {
                 }
             }
 
-            for (int slot : unsupported) {
-                changed |= removeAndDrop(slot);
+            for (int slot = 0; slot < 6; slot++) {
+                if ((unsupportedMask & (1 << slot)) != 0) {
+                    changed |= removeAndDrop(slot);
+                }
             }
 
             if (changed && level.getBlockEntity(worldPosition) == this) {
@@ -140,7 +150,8 @@ public final class MultipartBlockEntity extends BlockEntity {
             }
 
             boolean localChanged = false;
-            for (Part part : multipart.parts()) {
+            for (int slot = 0; slot <= Part.CENTER_SLOT; slot++) {
+                Part part = multipart.part(slot);
                 if (part instanceof WirePart wire) {
                     localChanged |= wire.recompute(multipart);
                 } else if (part instanceof GatePart gate) {
@@ -170,7 +181,8 @@ public final class MultipartBlockEntity extends BlockEntity {
     ) {
         enqueueMultipart(queue, queued, multipart.worldPosition);
 
-        for (Part part : multipart.parts()) {
+        for (int slot = 0; slot <= Part.CENTER_SLOT; slot++) {
+            Part part = multipart.part(slot);
             if (part instanceof WirePart wire) {
                 enqueueWireTargets(queue, queued, multipart, wire);
             } else if (part instanceof GatePart gate) {
