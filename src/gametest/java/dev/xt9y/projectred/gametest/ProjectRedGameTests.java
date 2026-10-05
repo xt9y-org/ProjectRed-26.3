@@ -1315,6 +1315,264 @@ public final class ProjectRedGameTests {
         });
     }
 
+    @GameTest(structure = EMPTY, maxTicks = 50)
+    public void orAndGatesMatchProjectRedTruthTables(GameTestHelper helper) {
+        BlockPos orRel = new BlockPos(2, 2, 2);
+        BlockPos andRel = new BlockPos(6, 2, 2);
+
+        for (BlockPos pos : new BlockPos[] { orRel, andRel }) {
+            helper.setBlock(pos.below(), Blocks.STONE.defaultBlockState());
+            helper.setBlock(pos, PRContent.MULTIPART.defaultBlockState());
+        }
+
+        MultipartBlockEntity orMultipart = multipart(helper, orRel);
+        MultipartBlockEntity andMultipart = multipart(helper, andRel);
+        GatePart orGate = new GatePart(GateType.OR, Direction.DOWN.ordinal(), 0);
+        GatePart andGate = new GatePart(GateType.AND, Direction.DOWN.ordinal(), 0);
+
+        helper.assertTrue(orMultipart.add(orGate), "failed to add OR gate");
+        helper.assertTrue(andMultipart.add(andGate), "failed to add AND gate");
+
+        helper.setBlock(orRel.east(), Blocks.REDSTONE_BLOCK.defaultBlockState());
+        orMultipart.onNeighborSignalChanged();
+
+        helper.setBlock(andRel.east(), Blocks.REDSTONE_BLOCK.defaultBlockState());
+        helper.setBlock(andRel.south(), Blocks.REDSTONE_BLOCK.defaultBlockState());
+        helper.setBlock(andRel.west(), Blocks.REDSTONE_BLOCK.defaultBlockState());
+        andMultipart.onNeighborSignalChanged();
+
+        helper.runAfterDelay(3, () -> {
+            helper.assertTrue(
+                    orMultipart.vanillaSignal(Direction.NORTH) == 15,
+                    "OR gate must assert with any enabled input high"
+            );
+            helper.assertTrue(
+                    andMultipart.vanillaSignal(Direction.NORTH) == 15,
+                    "AND gate must assert only when all enabled inputs are high"
+            );
+
+            helper.setBlock(orRel.east(), Blocks.AIR.defaultBlockState());
+            orMultipart.onNeighborSignalChanged();
+
+            helper.setBlock(andRel.west(), Blocks.AIR.defaultBlockState());
+            andMultipart.onNeighborSignalChanged();
+
+            helper.runAfterDelay(6, () -> {
+                helper.assertTrue(
+                        orMultipart.vanillaSignal(Direction.NORTH) == 0,
+                        "OR gate must clear when all inputs are low"
+                );
+                helper.assertTrue(
+                        andMultipart.vanillaSignal(Direction.NORTH) == 0,
+                        "AND gate must clear when any enabled input goes low"
+                );
+                helper.succeed();
+            });
+        });
+    }
+
+    @GameTest(structure = EMPTY, maxTicks = 50)
+    public void xorAndXnorRemainComplementary(GameTestHelper helper) {
+        BlockPos xorRel = new BlockPos(2, 2, 2);
+        BlockPos xnorRel = new BlockPos(6, 2, 2);
+
+        for (BlockPos pos : new BlockPos[] { xorRel, xnorRel }) {
+            helper.setBlock(pos.below(), Blocks.STONE.defaultBlockState());
+            helper.setBlock(pos, PRContent.MULTIPART.defaultBlockState());
+        }
+
+        MultipartBlockEntity xorMultipart = multipart(helper, xorRel);
+        MultipartBlockEntity xnorMultipart = multipart(helper, xnorRel);
+        GatePart xor = new GatePart(GateType.XOR, Direction.DOWN.ordinal(), 0);
+        GatePart xnor = new GatePart(GateType.XNOR, Direction.DOWN.ordinal(), 0);
+
+        helper.assertTrue(xorMultipart.add(xor), "failed to add XOR gate");
+        helper.assertTrue(xnorMultipart.add(xnor), "failed to add XNOR gate");
+
+        helper.setBlock(xorRel.east(), Blocks.REDSTONE_BLOCK.defaultBlockState());
+        helper.setBlock(xnorRel.east(), Blocks.REDSTONE_BLOCK.defaultBlockState());
+        xorMultipart.onNeighborSignalChanged();
+        xnorMultipart.onNeighborSignalChanged();
+
+        helper.runAfterDelay(3, () -> {
+            helper.assertTrue(
+                    xorMultipart.vanillaSignal(Direction.NORTH) == 15,
+                    "XOR must assert for exactly one high input"
+            );
+            helper.assertTrue(
+                    xnorMultipart.vanillaSignal(Direction.NORTH) == 0,
+                    "XNOR must clear for exactly one high input"
+            );
+
+            helper.setBlock(xorRel.west(), Blocks.REDSTONE_BLOCK.defaultBlockState());
+            helper.setBlock(xnorRel.west(), Blocks.REDSTONE_BLOCK.defaultBlockState());
+            xorMultipart.onNeighborSignalChanged();
+            xnorMultipart.onNeighborSignalChanged();
+
+            helper.runAfterDelay(6, () -> {
+                helper.assertTrue(
+                        xorMultipart.vanillaSignal(Direction.NORTH) == 0,
+                        "XOR must clear when both inputs are equal"
+                );
+                helper.assertTrue(
+                        xnorMultipart.vanillaSignal(Direction.NORTH) == 15,
+                        "XNOR must assert when both inputs are equal"
+                );
+                helper.succeed();
+            });
+        });
+    }
+
+    @GameTest(structure = EMPTY, maxTicks = 60)
+    public void multiplexerSelectsTheProjectRedSideInput(GameTestHelper helper) {
+        BlockPos gateRel = new BlockPos(3, 2, 3);
+
+        helper.setBlock(gateRel.below(), Blocks.STONE.defaultBlockState());
+        helper.setBlock(gateRel, PRContent.MULTIPART.defaultBlockState());
+
+        MultipartBlockEntity multipart = multipart(helper, gateRel);
+        GatePart mux = new GatePart(GateType.MULTIPLEXER, Direction.DOWN.ordinal(), 0);
+        helper.assertTrue(multipart.add(mux), "failed to add multiplexer");
+
+        // Local 1/east is selected while local 2/south (selector) is low.
+        helper.setBlock(gateRel.east(), Blocks.REDSTONE_BLOCK.defaultBlockState());
+        multipart.onNeighborSignalChanged();
+
+        helper.runAfterDelay(3, () -> {
+            helper.assertTrue(
+                    multipart.vanillaSignal(Direction.NORTH) == 15,
+                    "multiplexer must forward its east input while selector is low"
+            );
+
+            // Raising selector chooses local 3/west, which is currently low.
+            helper.setBlock(gateRel.south(), Blocks.REDSTONE_BLOCK.defaultBlockState());
+            multipart.onNeighborSignalChanged();
+
+            helper.runAfterDelay(6, () -> {
+                helper.assertTrue(
+                        multipart.vanillaSignal(Direction.NORTH) == 0,
+                        "multiplexer must switch to the west input while selector is high"
+                );
+
+                helper.setBlock(gateRel.west(), Blocks.REDSTONE_BLOCK.defaultBlockState());
+                multipart.onNeighborSignalChanged();
+
+                helper.runAfterDelay(9, () -> {
+                    helper.assertTrue(
+                            multipart.vanillaSignal(Direction.NORTH) == 15,
+                            "selected west input must propagate through the multiplexer"
+                    );
+                    helper.succeed();
+                });
+            });
+        });
+    }
+
+    @GameTest(structure = EMPTY, maxTicks = 70)
+    public void transparentLatchTracksThenHolds(GameTestHelper helper) {
+        BlockPos gateRel = new BlockPos(3, 2, 3);
+
+        helper.setBlock(gateRel.below(), Blocks.STONE.defaultBlockState());
+        helper.setBlock(gateRel, PRContent.MULTIPART.defaultBlockState());
+
+        MultipartBlockEntity multipart = multipart(helper, gateRel);
+        GatePart latch = new GatePart(
+                GateType.TRANSPARENT_LATCH,
+                Direction.DOWN.ordinal(),
+                0
+        );
+        helper.assertTrue(multipart.add(latch), "failed to add transparent latch");
+
+        // Shape 0: local 2/south is enable and local 3/west is data.
+        helper.setBlock(gateRel.south(), Blocks.REDSTONE_BLOCK.defaultBlockState());
+        helper.setBlock(gateRel.west(), Blocks.REDSTONE_BLOCK.defaultBlockState());
+        multipart.onNeighborSignalChanged();
+
+        helper.runAfterDelay(3, () -> {
+            helper.assertTrue(
+                    multipart.vanillaSignal(Direction.NORTH) == 15,
+                    "transparent latch must pass high data while enabled"
+            );
+
+            // Disable first: the current high output should be held.
+            helper.setBlock(gateRel.south(), Blocks.AIR.defaultBlockState());
+            multipart.onNeighborSignalChanged();
+
+            helper.runAfterDelay(6, () -> {
+                helper.setBlock(gateRel.west(), Blocks.AIR.defaultBlockState());
+                multipart.onNeighborSignalChanged();
+
+                helper.runAfterDelay(9, () -> {
+                    helper.assertTrue(
+                            multipart.vanillaSignal(Direction.NORTH) == 15,
+                            "transparent latch must retain its value while disabled"
+                    );
+
+                    // Re-enable with low data and it must update low.
+                    helper.setBlock(gateRel.south(), Blocks.REDSTONE_BLOCK.defaultBlockState());
+                    multipart.onNeighborSignalChanged();
+
+                    helper.runAfterDelay(12, () -> {
+                        helper.assertTrue(
+                                multipart.vanillaSignal(Direction.NORTH) == 0,
+                                "transparent latch must resume tracking when enabled"
+                        );
+                        helper.succeed();
+                    });
+                });
+            });
+        });
+    }
+
+    @GameTest(structure = EMPTY, maxTicks = 50)
+    public void segmentDisplayReceivesAllBundledChannels(GameTestHelper helper) {
+        BlockPos panelRel = new BlockPos(3, 2, 2);
+        BlockPos displayRel = panelRel.south();
+
+        helper.setBlock(panelRel.below(), Blocks.STONE.defaultBlockState());
+        helper.setBlock(displayRel.below(), Blocks.STONE.defaultBlockState());
+        helper.setBlock(panelRel, PRContent.MULTIPART.defaultBlockState());
+        helper.setBlock(displayRel, PRContent.MULTIPART.defaultBlockState());
+
+        MultipartBlockEntity panelMultipart = multipart(helper, panelRel);
+        MultipartBlockEntity displayMultipart = multipart(helper, displayRel);
+
+        GatePart panel = new GatePart(
+                GateType.BUS_INPUT_PANEL,
+                Direction.DOWN.ordinal(),
+                0
+        );
+        GatePart display = new GatePart(
+                GateType.SEGMENT_DISPLAY,
+                Direction.DOWN.ordinal(),
+                0
+        );
+
+        helper.assertTrue(panelMultipart.add(panel), "failed to add bus input panel");
+        helper.assertTrue(displayMultipart.add(display), "failed to add segment display");
+
+        panel.togglePanelBit(2);
+        panel.togglePanelBit(11);
+        panelMultipart.markPartChanged();
+
+        helper.runAfterDelay(4, () -> {
+            int mask = display.segmentMask();
+            helper.assertTrue(
+                    (mask & (1 << 2)) != 0,
+                    "segment display must receive bundled channel 2"
+            );
+            helper.assertTrue(
+                    (mask & (1 << 11)) != 0,
+                    "segment display must receive bundled channel 11"
+            );
+            helper.assertTrue(
+                    Integer.bitCount(mask) == 2,
+                    "segment display must not invent unrelated bundled channels"
+            );
+            helper.succeed();
+        });
+    }
+
     private static Rig line(
             GameTestHelper helper,
             String firstId,
