@@ -13,6 +13,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.RedstoneWireBlock;
+import net.minecraft.world.level.block.RepeaterBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 
 public final class ProjectRedGameTests {
@@ -1049,6 +1050,49 @@ public final class ProjectRedGameTests {
             );
             helper.succeed();
         });
+    }
+
+    @GameTest(structure = EMPTY, maxTicks = 40)
+    public void directionalVanillaRepeaterFeedsOnlyTowardProjectRed(GameTestHelper helper) {
+        BlockPos wireRel = new BlockPos(3, 2, 3);
+        BlockPos repeaterRel = wireRel.west();
+
+        helper.setBlock(wireRel.below(), Blocks.STONE.defaultBlockState());
+        helper.setBlock(repeaterRel.below(), Blocks.STONE.defaultBlockState());
+        helper.setBlock(wireRel, PRContent.MULTIPART.defaultBlockState());
+        helper.setBlock(
+                repeaterRel,
+                Blocks.REPEATER.defaultBlockState()
+                        .setValue(RepeaterBlock.FACING, Direction.EAST)
+                        .setValue(RepeaterBlock.POWERED, true)
+        );
+
+        MultipartBlockEntity multipart = multipart(helper, wireRel);
+        WirePart wire = new WirePart(
+                requireWire("red_alloy_wire"),
+                Direction.DOWN.ordinal()
+        );
+        helper.assertTrue(multipart.add(wire), "failed to add red-alloy wire");
+
+        multipart.onNeighborSignalChanged();
+        helper.assertTrue(
+                wire.signal() == 255,
+                "east-facing powered vanilla repeater must feed the ProjectRed wire to its east"
+        );
+
+        helper.setBlock(
+                repeaterRel,
+                Blocks.REPEATER.defaultBlockState()
+                        .setValue(RepeaterBlock.FACING, Direction.WEST)
+                        .setValue(RepeaterBlock.POWERED, true)
+        );
+        multipart.onNeighborSignalChanged();
+
+        helper.assertTrue(
+                wire.signal() == 0,
+                "powered vanilla repeater facing away must not feed the ProjectRed wire"
+        );
+        helper.succeed();
     }
 
     private static Rig line(
