@@ -508,7 +508,7 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
                         0,
                         4,8,
                         reflect,
-                        0xEC0000,0x420000,0x808080
+                        0xEC0000,0x420000,0x535353
                 );
                 signalPanel(
                         state,poseStack,collector,order,p,attachment,
@@ -516,7 +516,7 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
                         0,
                         12,8,
                         reflect,
-                        0xEC0000,0x420000,0x808080
+                        0xEC0000,0x420000,0x535353
                 );
             }
             case NULL_CELL -> arrayRail(state,poseStack,collector,order,p,attachment,reflect,.50F);
@@ -558,7 +558,7 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
                         ~p.bundleMask & 0xFFFF,
                         8,8,
                         reflect,
-                        0xE1D600,0x756900,0x808080
+                        0xE1D600,0x756900,0x535353
                 );
             }
             case BUS_CONVERTER -> {
