@@ -71,7 +71,9 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
         BlockEntityRenderState.extractBase(blockEntity, state, breakProgress);
         List<Visual> out = new ArrayList<>();
 
-        for (Part part : blockEntity.parts()) {
+        for (int slot = 0; slot <= Part.CENTER_SLOT; slot++) {
+            Part part = blockEntity.part(slot);
+            if (part == null) continue;
             if (part instanceof WirePart wire) {
                 boolean powered = wire.spec().family() == WireFamily.BUNDLED
                         ? java.util.Arrays.stream(wire.bundled()).anyMatch(v -> v > 0)
