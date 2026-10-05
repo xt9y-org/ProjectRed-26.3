@@ -105,7 +105,7 @@ public final class PRContent {
         SCREWDRIVER = registerPartItem(
                 "screwdriver",
                 properties -> new ScrewdriverItem(
-                        properties.stacksTo(1).durability(128)
+                        properties.stacksTo(1).durability(128).setNoRepair()
                 )
         );
 
