@@ -444,7 +444,6 @@ public final class GatePart extends Part {
         long beforeScheduledAt = scheduledAt;
         int beforeTimerPeriod = timerPeriod;
         long beforePointerStart = pointerStart;
-        boolean beforePointerRebase = pointerNeedsWorldTimeRebase;
         int beforeCounterValue = counterValue;
         int beforeCounterMax = counterMax;
         int beforeCounterIncrement = counterIncrement;
@@ -457,7 +456,6 @@ public final class GatePart extends Part {
         int beforeBundleOutput2 = bundleOutput2;
         int beforeBundleMask = bundleMask;
         int beforePressMask = pressMask;
-        boolean beforeTickSound = tickSoundPending;
 
         long time = owner.getLevel() == null ? 0 : owner.getLevel().getGameTime();
 
@@ -495,7 +493,6 @@ public final class GatePart extends Part {
                 || scheduledAt != beforeScheduledAt
                 || timerPeriod != beforeTimerPeriod
                 || pointerStart != beforePointerStart
-                || pointerNeedsWorldTimeRebase != beforePointerRebase
                 || counterValue != beforeCounterValue
                 || counterMax != beforeCounterMax
                 || counterIncrement != beforeCounterIncrement
@@ -507,8 +504,7 @@ public final class GatePart extends Part {
                 || bundleOutput0 != beforeBundleOutput0
                 || bundleOutput2 != beforeBundleOutput2
                 || bundleMask != beforeBundleMask
-                || pressMask != beforePressMask
-                || tickSoundPending != beforeTickSound;
+                || pressMask != beforePressMask;
     }
 
     private void tickLightSensor(MultipartBlockEntity owner) {
