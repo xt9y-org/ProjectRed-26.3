@@ -837,6 +837,40 @@ final class RenderGeometry {
         vertexColor(c,pose,light,e[0],e[1],e[2],1,0,nx,ny,nz,r,g,bl);
     }
 
+    static void gateInputButtonLights(
+            VertexConsumer c,
+            PoseStack.Pose pose,
+            int light,
+            Direction attachment,
+            int rotation,
+            int pressMask
+    ) {
+        final float start = 3.25F / 16.0F;
+        final float cell = 2.5F / 16.0F;
+        final float size = 2.0F / 16.0F;
+        final float inset = .008F;
+
+        for (int bit = 0; bit < 16; bit++) {
+            if ((pressMask & 1 << bit) == 0) continue;
+            int row = bit / 4;
+            int col = bit % 4;
+            float x0 = start + col * cell + inset;
+            float z0 = start + row * cell + inset;
+            float x1 = start + col * cell + size - inset;
+            float z1 = start + row * cell + size - inset;
+            int rgb = net.minecraft.world.item.DyeColor.byId(bit)
+                    .getTextureDiffuseColor() & 0xFFFFFF;
+
+            surfaceRect(
+                    c, pose, light,
+                    attachment, rotation,
+                    x0, z0, x1, z1,
+                    2.51F / 16.0F,
+                    rgb
+            );
+        }
+    }
+
     static void gatePanelLights(
             VertexConsumer c,
             PoseStack.Pose pose,
