@@ -382,8 +382,8 @@ public final class ProjectRedGameTests {
 
             helper.runAfterDelay(3, () -> {
                 helper.assertTrue(
-                        multipart.vanillaSignal(Direction.NORTH) == 0,
-                        "equal side input must suppress compare-mode output"
+                        multipart.vanillaSignal(Direction.NORTH) == 15,
+                        "ProjectRed compare mode must keep the back level when side input is equal"
                 );
                 helper.succeed();
             });
