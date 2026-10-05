@@ -146,6 +146,10 @@ public final class GatePart extends Part {
         return bundleMask & 0xFFFF;
     }
 
+    public boolean pointerRunning() {
+        return pointerStart >= 0;
+    }
+
     public int activePortMask() {
         int mask = state & 0xF;
 
@@ -796,9 +800,15 @@ public final class GatePart extends Part {
                 int oldOut = state2 & 0xF;
                 int side = Math.max(left, right);
                 int out = shape == 0
-                        ? (back > side ? back : 0)
+                        ? (back >= side ? back : 0)
                         : Math.max(back - side, 0);
-                int digital = (left > 0 ? 2 : 0)
+
+                // Legacy Comparator::digitize(newInput | calcOutput) also
+                // exposes the calculated output in local state bit 0. The
+                // renderer uses that bit for the +/- indicator chips while
+                // the delayed analog output remains in state2's low nibble.
+                int digital = (out > 0 ? 1 : 0)
+                        | (left > 0 ? 2 : 0)
                         | (back > 0 ? 4 : 0)
                         | (right > 0 ? 8 : 0);
                 state = (state & 0xF0) | digital;
