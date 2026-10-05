@@ -8,14 +8,24 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
 
 public final class TimerConfigScreen extends Screen {
     private static final int[] DELTAS = { -200, -20, -1, 1, 20, 200 };
     private static final String[] LABELS = {
             "-10s", "-1s", "-50ms", "+50ms", "+1s", "+10s"
     };
+    private static final int[] BUTTON_X = { 5, 46, 87, 129, 170, 211 };
+    private static final int GUI_WIDTH = 256;
+    private static final int GUI_HEIGHT = 55;
+    private static final Identifier BACKGROUND =
+            Identifier.fromNamespaceAndPath(
+                    "projectred",
+                    "textures/integration/gui/timer_gate.png"
+            );
 
     private final BlockPos pos;
     private final int slot;
@@ -32,9 +42,8 @@ public final class TimerConfigScreen extends Screen {
     protected void init() {
         super.init();
 
-        int total = 6 * 40 + 5 * 2;
-        int startX = (this.width - total) / 2;
-        int y = this.height / 2 + 10;
+        int x = (this.width - GUI_WIDTH) / 2;
+        int y = (this.height - GUI_HEIGHT) / 2;
 
         for (int i = 0; i < DELTAS.length; i++) {
             int delta = DELTAS[i];
@@ -42,7 +51,7 @@ public final class TimerConfigScreen extends Screen {
                     Button.builder(
                             Component.literal(LABELS[i]),
                             button -> adjust(delta)
-                    ).bounds(startX + i * 42, y, 40, 20).build()
+                    ).bounds(x + BUTTON_X[i], y + 25, 40, 20).build()
             );
         }
     }
@@ -85,14 +94,31 @@ public final class TimerConfigScreen extends Screen {
             float partialTick
     ) {
         super.extractRenderState(graphics, mouseX, mouseY, partialTick);
+
+        int x = (this.width - GUI_WIDTH) / 2;
+        int y = (this.height - GUI_HEIGHT) / 2;
+
+        graphics.blit(
+                RenderPipelines.GUI_TEXTURED,
+                BACKGROUND,
+                x,
+                y,
+                0.0F,
+                0.0F,
+                GUI_WIDTH,
+                GUI_HEIGHT,
+                GUI_WIDTH,
+                GUI_HEIGHT
+        );
+
         graphics.centeredText(
                 this.font,
                 Component.literal(
                         String.format("Timer interval: %.2fs", period * 0.05)
                 ),
                 this.width / 2,
-                this.height / 2 - 18,
-                -1
+                y + 8,
+                0xFF404040
         );
     }
 }

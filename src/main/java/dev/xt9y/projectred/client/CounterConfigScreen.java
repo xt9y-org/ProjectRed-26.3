@@ -8,11 +8,21 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
 
 public final class CounterConfigScreen extends Screen {
     private static final int[] DELTAS = { -10, -5, -1, 1, 5, 10 };
+    private static final int[] BUTTON_X = { 5, 46, 87, 129, 170, 211 };
+    private static final int GUI_WIDTH = 256;
+    private static final int GUI_HEIGHT = 145;
+    private static final Identifier BACKGROUND =
+            Identifier.fromNamespaceAndPath(
+                    "projectred",
+                    "textures/integration/gui/counter_gate.png"
+            );
 
     private final BlockPos pos;
     private final int slot;
@@ -42,13 +52,12 @@ public final class CounterConfigScreen extends Screen {
     protected void init() {
         super.init();
 
-        int total = 6 * 40 + 5 * 2;
-        int startX = (this.width - total) / 2;
-        int startY = this.height / 2 - 42;
+        int x = (this.width - GUI_WIDTH) / 2;
+        int y = (this.height - GUI_HEIGHT) / 2;
 
         for (int row = 0; row < 3; row++) {
             final int action = row;
-            int y = startY + row * 40;
+            int buttonY = y + 16 + 40 * row;
             for (int i = 0; i < DELTAS.length; i++) {
                 int delta = DELTAS[i];
                 String label = delta > 0 ? "+" + delta : Integer.toString(delta);
@@ -56,7 +65,7 @@ public final class CounterConfigScreen extends Screen {
                         Button.builder(
                                 Component.literal(label),
                                 button -> adjust(action, delta)
-                        ).bounds(startX + i * 42, y + 14, 40, 20).build()
+                        ).bounds(x + BUTTON_X[i], buttonY, 40, 20).build()
                 );
             }
         }
@@ -119,34 +128,39 @@ public final class CounterConfigScreen extends Screen {
     ) {
         super.extractRenderState(graphics, mouseX, mouseY, partialTick);
 
-        int y = this.height / 2 - 42;
+        int x = (this.width - GUI_WIDTH) / 2;
+        int y = (this.height - GUI_HEIGHT) / 2;
+
+        graphics.blit(
+                RenderPipelines.GUI_TEXTURED,
+                BACKGROUND,
+                x,
+                y,
+                0.0F,
+                0.0F,
+                GUI_WIDTH,
+                GUI_HEIGHT,
+                GUI_WIDTH,
+                GUI_HEIGHT
+        );
+
+        drawCentered(graphics, "Maximum: " + maximum, y + 5);
+        drawCentered(graphics, "Increment: " + increment, y + 45);
+        drawCentered(graphics, "Decrement: " + decrement, y + 85);
+        drawCentered(graphics, "State: " + value, y + 125);
+    }
+
+    private void drawCentered(
+            GuiGraphicsExtractor graphics,
+            String text,
+            int y
+    ) {
         graphics.centeredText(
                 this.font,
-                Component.literal("Maximum: " + maximum),
+                Component.literal(text),
                 this.width / 2,
                 y,
-                -1
-        );
-        graphics.centeredText(
-                this.font,
-                Component.literal("Increment: " + increment),
-                this.width / 2,
-                y + 40,
-                -1
-        );
-        graphics.centeredText(
-                this.font,
-                Component.literal("Decrement: " + decrement),
-                this.width / 2,
-                y + 80,
-                -1
-        );
-        graphics.centeredText(
-                this.font,
-                Component.literal("State: " + value),
-                this.width / 2,
-                y + 120,
-                -1
+                0xFF404040
         );
     }
 }
