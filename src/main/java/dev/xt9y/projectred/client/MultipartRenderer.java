@@ -1234,14 +1234,13 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
             int level,
             boolean reflect
     ) {
-        if (level <= 0) return;
         collector.order(order[0]++).submitCustomGeometry(
                 poseStack,
-                RenderTypes.entityCutout(WIRE_ON),
+                RenderTypes.entityCutout(SEGMENT_DIGIT),
                 (pose, consumer) -> RenderGeometry.gateSignalBar(
                         consumer,
                         pose,
-                        0x00F000F0,
+                        state.lightCoords,
                         attachment,
                         p.gateRotation,
                         level,
