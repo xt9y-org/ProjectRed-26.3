@@ -15,6 +15,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.RedstoneWireBlock;
 import net.minecraft.world.level.block.RepeaterBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 
 public final class ProjectRedGameTests {
     private static final String EMPTY = "fabric-gametest-api-v1:empty";
@@ -1093,6 +1094,35 @@ public final class ProjectRedGameTests {
                 "powered vanilla repeater facing away must not feed the ProjectRed wire"
         );
         helper.succeed();
+    }
+
+    @GameTest(structure = EMPTY, maxTicks = 40)
+    public void projectRedGateStrongPowersThroughSolidBlock(GameTestHelper helper) {
+        BlockPos gateRel = new BlockPos(3, 2, 3);
+        BlockPos conductorRel = gateRel.north();
+        BlockPos lampRel = conductorRel.north();
+
+        helper.setBlock(gateRel.below(), Blocks.STONE.defaultBlockState());
+        helper.setBlock(conductorRel, Blocks.STONE.defaultBlockState());
+        helper.setBlock(lampRel, Blocks.REDSTONE_LAMP.defaultBlockState());
+        helper.setBlock(gateRel, PRContent.MULTIPART.defaultBlockState());
+
+        MultipartBlockEntity multipart = multipart(helper, gateRel);
+        GatePart not = new GatePart(
+                GateType.NOT,
+                Direction.DOWN.ordinal(),
+                0
+        );
+        helper.assertTrue(multipart.add(not), "failed to add NOT gate");
+
+        helper.runAfterDelay(3, () -> {
+            helper.assertTrue(
+                    helper.getBlockState(lampRel)
+                            .getValue(BlockStateProperties.LIT),
+                    "ProjectRed logic output must strong-power a solid conductor and light the block beyond it"
+            );
+            helper.succeed();
+        });
     }
 
     private static Rig line(
