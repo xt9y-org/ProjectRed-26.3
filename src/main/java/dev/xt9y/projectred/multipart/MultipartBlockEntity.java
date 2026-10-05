@@ -1955,6 +1955,12 @@ public final class MultipartBlockEntity extends BlockEntity {
         if (level != null) {
             BlockState state = level.getBlockState(worldPosition);
             level.sendBlockUpdated(worldPosition, state, state, 3);
+
+            // A multipart's redstone ports live in block-entity state. When a
+            // gate rotates, changes shape, or is added/removed, the blockstate
+            // itself does not change, so vanilla dust would otherwise keep
+            // its stale connection shape and never evaluate the new output.
+            state.updateNeighbourShapes(level, worldPosition, 3);
             level.updateNeighborsAt(worldPosition, state.getBlock());
 
             if (!level.isClientSide()) {

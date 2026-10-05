@@ -1002,14 +1002,17 @@ public final class ProjectRedGameTests {
                     )
             );
 
-            helper.runAfterDelay(40, () ->
+            // Release happens on tick 3. ProjectRed's default State Cell
+            // pointer runs for 38 ticks, so its pulse begins on tick 41 and
+            // remains high until the scheduled clear on tick 43.
+            helper.runAfterDelay(39, () ->
                     helper.assertTrue(
                             multipart.vanillaSignal(Direction.NORTH) == 15,
                             "state cell expiry must emit the ProjectRed two-tick pulse"
                     )
             );
 
-            helper.runAfterDelay(43, () -> {
+            helper.runAfterDelay(42, () -> {
                 helper.assertTrue(
                         multipart.vanillaSignal(Direction.NORTH) == 0,
                         "state cell expiry pulse must clear after two ticks"
