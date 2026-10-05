@@ -95,6 +95,11 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
                         0
                 ));
             } else if (part instanceof GatePart gate) {
+                if (blockEntity.getLevel() != null) {
+                    gate.restoreWorldTimeBase(
+                            blockEntity.getLevel().getGameTime()
+                    );
+                }
                 out.add(new Visual(
                         false,
                         part.slot(),

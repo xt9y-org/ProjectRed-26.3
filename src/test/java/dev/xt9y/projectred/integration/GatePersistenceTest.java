@@ -48,4 +48,20 @@ final class GatePersistenceTest {
         assertEquals(11, copy.state());
         assertEquals(1, copy.shape());
     }
+
+    @Test
+    void elapsedPointerStateRebasesOnClientTime() {
+        GatePart gate = (GatePart) Part.decode(
+                "g|timer_gate|0|0|0|0|0|-1|40|7|0|10|1|1|0|0|0|0|0|0|65535|0|elapsed"
+        );
+
+        gate.restoreWorldTimeBase(100L);
+
+        float expected = (7.0F / 38.0F) * ((float) Math.PI * 2.0F);
+        assertEquals(
+                expected,
+                gate.pointerAngle(100L, 0L, 0.0F),
+                0.0001F
+        );
+    }
 }

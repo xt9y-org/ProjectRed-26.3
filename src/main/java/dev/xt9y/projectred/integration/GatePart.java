@@ -421,10 +421,15 @@ public final class GatePart extends Part {
     }
 
     public void restoreWorldTimeBase(MultipartBlockEntity owner) {
-        if (!pointerNeedsWorldTimeRebase || owner.getLevel() == null) return;
+        if (owner.getLevel() == null) return;
+        restoreWorldTimeBase(owner.getLevel().getGameTime());
+    }
+
+    public void restoreWorldTimeBase(long gameTime) {
+        if (!pointerNeedsWorldTimeRebase) return;
 
         if (pointerStart >= 0) {
-            pointerStart = owner.getLevel().getGameTime() - pointerStart;
+            pointerStart = gameTime - pointerStart;
         }
         pointerNeedsWorldTimeRebase = false;
     }
