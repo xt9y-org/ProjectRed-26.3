@@ -28,6 +28,7 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
     private static final Identifier WIRE_ON = projectRed("integration/block/wire_material_on");
     private static final Identifier SEGMENT_BASE = projectRed("integration/block/segment_display");
     private static final Identifier SEGMENT_DIGIT = projectRed("integration/block/segment_display_digit");
+    private static final Identifier POINTER = projectRed("integration/block/pointer");
 
     public MultipartRenderer(BlockEntityRendererProvider.Context context) {}
 
@@ -48,7 +49,8 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
             int gateState,
             boolean arrayCell,
             int bundledMask,
-            int panelMask
+            int panelMask,
+            float pointerAngle
     ) {}
 
     @Override
@@ -85,7 +87,8 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
                         0,
                         false,
                         0,
-                        0
+                        0,
+                        Float.NaN
                 ));
             } else if (part instanceof GatePart gate) {
                 out.add(new Visual(
@@ -101,7 +104,16 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
                         gate.state(),
                         gate.isArrayCell(),
                         gate.segmentMask(),
-                        gate.panelMask()
+                        gate.panelMask(),
+                        gate.pointerAngle(
+                                blockEntity.getLevel() == null
+                                        ? 0L
+                                        : blockEntity.getLevel().getGameTime(),
+                                blockEntity.getLevel() == null
+                                        ? 0L
+                                        : blockEntity.getLevel().getDefaultClockTime(),
+                                partialTick
+                        )
                 ));
             }
         }
@@ -242,6 +254,22 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
                             )
                     );
                 }
+            }
+
+            if (!Float.isNaN(part.pointerAngle)) {
+                collector.order(order++).submitCustomGeometry(
+                        poseStack,
+                        RenderTypes.entityCutout(POINTER),
+                        (pose, consumer) -> RenderGeometry.gatePointer(
+                                consumer,
+                                pose,
+                                state.lightCoords,
+                                attachment,
+                                part.gateRotation,
+                                part.arrayCell ? .755F : .132F,
+                                part.pointerAngle
+                        )
+                );
             }
 
             if (part.gateType == GateType.BUS_INPUT_PANEL && part.panelMask != 0) {

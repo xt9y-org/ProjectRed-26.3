@@ -109,6 +109,96 @@ final class RenderGeometry {
         }
     }
 
+    static void gatePointer(
+            VertexConsumer c,
+            PoseStack.Pose pose,
+            int light,
+            Direction attachment,
+            int rotation,
+            float surfaceDepth,
+            float angle
+    ) {
+        Direction forward = MultipartBlockEntity.localToWorld(
+                attachment,
+                rotation,
+                0
+        );
+        Direction right = MultipartBlockEntity.localToWorld(
+                attachment,
+                rotation,
+                1
+        );
+
+        float fx = forward.getStepX();
+        float fy = forward.getStepY();
+        float fz = forward.getStepZ();
+        float rx = right.getStepX();
+        float ry = right.getStepY();
+        float rz = right.getStepZ();
+
+        float cos = (float) Math.cos(angle);
+        float sin = (float) Math.sin(angle);
+
+        float dx = fx * cos + rx * sin;
+        float dy = fy * cos + ry * sin;
+        float dz = fz * cos + rz * sin;
+
+        float px = -fx * sin + rx * cos;
+        float py = -fy * sin + ry * cos;
+        float pz = -fz * sin + rz * cos;
+
+        float cx = .5F;
+        float cy = .5F;
+        float cz = .5F;
+
+        float face = surfaceDepth + .002F;
+        switch (attachment) {
+            case DOWN -> cy = face;
+            case UP -> cy = 1.0F - face;
+            case NORTH -> cz = face;
+            case SOUTH -> cz = 1.0F - face;
+            case WEST -> cx = face;
+            case EAST -> cx = 1.0F - face;
+        }
+
+        float back = .055F;
+        float front = .255F;
+        float halfWidth = .026F;
+
+        float ax = cx - dx * back - px * halfWidth;
+        float ay = cy - dy * back - py * halfWidth;
+        float az = cz - dz * back - pz * halfWidth;
+
+        float bx = cx + dx * front - px * halfWidth;
+        float by = cy + dy * front - py * halfWidth;
+        float bz = cz + dz * front - pz * halfWidth;
+
+        float cx2 = cx + dx * front + px * halfWidth;
+        float cy2 = cy + dy * front + py * halfWidth;
+        float cz2 = cz + dz * front + pz * halfWidth;
+
+        float dx2 = cx - dx * back + px * halfWidth;
+        float dy2 = cy - dy * back + py * halfWidth;
+        float dz2 = cz - dz * back + pz * halfWidth;
+
+        float nx = -attachment.getStepX();
+        float ny = -attachment.getStepY();
+        float nz = -attachment.getStepZ();
+
+        face(
+                c,
+                pose,
+                light,
+                nx,
+                ny,
+                nz,
+                ax, ay, az, 0, 1,
+                bx, by, bz, 0, 0,
+                cx2, cy2, cz2, 1, 0,
+                dx2, dy2, dz2, 1, 1
+        );
+    }
+
     static void gateIndicator(
             VertexConsumer c,
             PoseStack.Pose pose,
