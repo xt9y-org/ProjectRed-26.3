@@ -111,6 +111,58 @@ public final class GatePart extends Part {
         return pressMask & 0xFFFF;
     }
 
+    public float pointerAngle(
+            long gameTime,
+            long clockTime,
+            float partialTick
+    ) {
+        return switch (type) {
+            case TIMER -> {
+                if (pointerStart < 0) yield 0.0F;
+                float max = Math.max(2, timerPeriod - 2);
+                float progress = Math.min(
+                        1.0F,
+                        Math.max(
+                                0.0F,
+                                (gameTime - pointerStart + partialTick) / max
+                        )
+                );
+                yield progress * ((float) Math.PI * 2.0F);
+            }
+            case SEQUENCER -> {
+                long cycle = Math.max(4L, timerPeriod * 4L);
+                float progress = (float) (
+                        Math.floorMod(clockTime, cycle) + partialTick
+                ) / (float) cycle;
+                float angle = progress * ((float) Math.PI * 2.0F);
+                yield shape == 1 ? -angle : angle;
+            }
+            case COUNTER -> {
+                float progress = counterMax <= 0
+                        ? 0.0F
+                        : (float) counterValue / (float) counterMax;
+                float degrees = 210.0F + progress * 120.0F;
+                float angle = (float) Math.toRadians(degrees);
+                yield shape == 1 ? -angle : angle;
+            }
+            case STATE_CELL -> {
+                if (pointerStart < 0) yield -(float) Math.PI / 2.0F;
+                float max = Math.max(2, timerPeriod - 2);
+                float progress = Math.min(
+                        1.0F,
+                        Math.max(
+                                0.0F,
+                                (gameTime - pointerStart + partialTick) / max
+                        )
+                );
+                float angle = progress * ((float) Math.PI * 2.0F)
+                        - (float) Math.PI / 2.0F;
+                yield shape == 1 ? -angle : angle;
+            }
+            default -> Float.NaN;
+        };
+    }
+
     public void setDisplayColor(int color) {
         if (type != GateType.SEGMENT_DISPLAY) return;
         state = Math.max(0, Math.min(15, color));
