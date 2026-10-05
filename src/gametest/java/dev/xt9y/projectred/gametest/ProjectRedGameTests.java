@@ -1224,3 +1224,68 @@ public final class ProjectRedGameTests {
         });
     }
 
+    private static Rig line(
+            GameTestHelper helper,
+            String firstId,
+            String secondId
+    ) {
+        BlockPos firstRel = new BlockPos(2, 2, 2);
+        BlockPos secondRel = firstRel.east();
+        BlockPos sourceRel = firstRel.west();
+
+        helper.setBlock(firstRel.below(), Blocks.STONE.defaultBlockState());
+        helper.setBlock(secondRel.below(), Blocks.STONE.defaultBlockState());
+        helper.setBlock(sourceRel, Blocks.REDSTONE_BLOCK.defaultBlockState());
+        helper.setBlock(firstRel, PRContent.MULTIPART.defaultBlockState());
+        helper.setBlock(secondRel, PRContent.MULTIPART.defaultBlockState());
+
+        MultipartBlockEntity first = multipart(helper, firstRel);
+        MultipartBlockEntity second = multipart(helper, secondRel);
+
+        WireSpec firstSpec = requireWire(firstId);
+        WireSpec secondSpec = requireWire(secondId);
+
+        WirePart firstWire = new WirePart(
+                firstSpec,
+                Direction.DOWN.ordinal()
+        );
+        WirePart secondWire = new WirePart(
+                secondSpec,
+                Direction.DOWN.ordinal()
+        );
+
+        helper.assertTrue(first.add(firstWire), "failed to add first wire");
+        helper.assertTrue(second.add(secondWire), "failed to add second wire");
+
+        return new Rig(first, second, firstWire, secondWire);
+    }
+
+    private static MultipartBlockEntity multipart(
+            GameTestHelper helper,
+            BlockPos relative
+    ) {
+        BlockEntity entity = helper.getLevel().getBlockEntity(
+                helper.absolutePos(relative)
+        );
+        if (!(entity instanceof MultipartBlockEntity multipart)) {
+            helper.fail("missing ProjectRed multipart block entity at " + relative);
+            throw new AssertionError();
+        }
+        return multipart;
+    }
+
+    private static WireSpec requireWire(String id) {
+        WireSpec spec = WireSpec.byId(id);
+        if (spec == null) {
+            throw new AssertionError("missing wire spec " + id);
+        }
+        return spec;
+    }
+
+    private record Rig(
+            MultipartBlockEntity first,
+            MultipartBlockEntity second,
+            WirePart firstWire,
+            WirePart secondWire
+    ) {}
+}
