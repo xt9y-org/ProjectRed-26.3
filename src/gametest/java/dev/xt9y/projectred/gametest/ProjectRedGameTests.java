@@ -12,6 +12,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.RedstoneWireBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 
 public final class ProjectRedGameTests {
@@ -963,6 +964,87 @@ public final class ProjectRedGameTests {
                 );
                 helper.succeed();
             });
+        });
+    }
+
+    @GameTest(structure = EMPTY, maxTicks = 100)
+    public void stateCellHoldsThenEmitsTimedPulse(GameTestHelper helper) {
+        BlockPos gateRel = new BlockPos(3, 2, 3);
+        BlockPos triggerRel = gateRel.south();
+
+        helper.setBlock(gateRel.below(), Blocks.STONE.defaultBlockState());
+        helper.setBlock(gateRel, PRContent.MULTIPART.defaultBlockState());
+
+        MultipartBlockEntity multipart = multipart(helper, gateRel);
+        GatePart cell = new GatePart(
+                GateType.STATE_CELL,
+                Direction.DOWN.ordinal(),
+                0
+        );
+        helper.assertTrue(multipart.add(cell), "failed to add state cell");
+
+        helper.setBlock(triggerRel, Blocks.REDSTONE_BLOCK.defaultBlockState());
+        multipart.onNeighborSignalChanged();
+
+        helper.runAfterDelay(3, () -> {
+            helper.assertTrue(
+                    multipart.vanillaSignal(Direction.WEST) == 15,
+                    "armed state cell must assert its hold output after two ticks"
+            );
+
+            helper.setBlock(triggerRel, Blocks.AIR.defaultBlockState());
+            multipart.onNeighborSignalChanged();
+
+            helper.runAfterDelay(37, () ->
+                    helper.assertTrue(
+                            multipart.vanillaSignal(Direction.WEST) == 15,
+                            "state cell must hold until its configured pointer expires"
+                    )
+            );
+
+            helper.runAfterDelay(40, () ->
+                    helper.assertTrue(
+                            multipart.vanillaSignal(Direction.NORTH) == 15,
+                            "state cell expiry must emit the ProjectRed two-tick pulse"
+                    )
+            );
+
+            helper.runAfterDelay(43, () -> {
+                helper.assertTrue(
+                        multipart.vanillaSignal(Direction.NORTH) == 0,
+                        "state cell expiry pulse must clear after two ticks"
+                );
+                helper.succeed();
+            });
+        });
+    }
+
+    @GameTest(structure = EMPTY, maxTicks = 40)
+    public void projectRedGatePowersVanillaRedstoneDust(GameTestHelper helper) {
+        BlockPos gateRel = new BlockPos(3, 2, 3);
+        BlockPos dustRel = gateRel.north();
+
+        helper.setBlock(gateRel.below(), Blocks.STONE.defaultBlockState());
+        helper.setBlock(dustRel.below(), Blocks.STONE.defaultBlockState());
+        helper.setBlock(dustRel, Blocks.REDSTONE_WIRE.defaultBlockState());
+        helper.setBlock(gateRel, PRContent.MULTIPART.defaultBlockState());
+
+        MultipartBlockEntity multipart = multipart(helper, gateRel);
+        GatePart not = new GatePart(
+                GateType.NOT,
+                Direction.DOWN.ordinal(),
+                0
+        );
+        helper.assertTrue(multipart.add(not), "failed to add NOT gate");
+
+        helper.runAfterDelay(3, () -> {
+            int power = helper.getBlockState(dustRel)
+                    .getValue(RedstoneWireBlock.POWER);
+            helper.assertTrue(
+                    power == 15,
+                    "normally-high ProjectRed NOT output must drive vanilla dust at full strength"
+            );
+            helper.succeed();
         });
     }
 
