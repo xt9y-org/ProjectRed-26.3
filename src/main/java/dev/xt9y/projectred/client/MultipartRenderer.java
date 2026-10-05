@@ -476,8 +476,22 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
                         "array/busxcvr",.5F,0,.5F,1,0,BUS_XCVR,reflect);
                 panelBase(state,poseStack,collector,order,p,attachment,4,8,false,BUS_XCVR,reflect);
                 panelBase(state,poseStack,collector,order,p,attachment,12,8,true,BUS_XCVR,reflect);
-                signalPanel(state,poseStack,collector,order,p,attachment,p.bundleInput0 | p.bundleOutput0,4,8,reflect);
-                signalPanel(state,poseStack,collector,order,p,attachment,p.bundleInput2 | p.bundleOutput2,12,8,reflect);
+                signalPanel(
+                        state,poseStack,collector,order,p,attachment,
+                        p.bundleInput0 | p.bundleOutput0,
+                        0,
+                        4,8,
+                        reflect,
+                        0xEC0000,0x420000,0x808080
+                );
+                signalPanel(
+                        state,poseStack,collector,order,p,attachment,
+                        p.bundleInput2 | p.bundleOutput2,
+                        0,
+                        12,8,
+                        reflect,
+                        0xEC0000,0x420000,0x808080
+                );
             }
             case NULL_CELL -> arrayRail(state,poseStack,collector,order,p,attachment,reflect,.50F);
             case INVERT_CELL -> {
@@ -505,7 +519,14 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
                 mesh(state,poseStack,collector,order,p,attachment,
                         "array/busrand",.5F,0,.5F,1,0,BUS_RANDOMIZER,reflect);
                 panelBase(state,poseStack,collector,order,p,attachment,8,8,true,BUS_XCVR,reflect);
-                signalPanel(state,poseStack,collector,order,p,attachment,p.bundleOutput0,8,8,reflect);
+                signalPanel(
+                        state,poseStack,collector,order,p,attachment,
+                        p.bundleOutput0,
+                        ~p.bundleMask & 0xFFFF,
+                        8,8,
+                        reflect,
+                        0xE1D600,0x756900,0x808080
+                );
             }
             case BUS_CONVERTER -> {
                 mesh(state,poseStack,collector,order,p,attachment,
@@ -1081,26 +1102,33 @@ public final class MultipartRenderer implements BlockEntityRenderer<MultipartBlo
             int[] order,
             Visual p,
             Direction attachment,
-            int mask,
+            int signalMask,
+            int disableMask,
             float x,
             float z,
-            boolean reflect
+            boolean reflect,
+            int onColor,
+            int offColor,
+            int disableColor
     ) {
-        if (mask == 0) return;
         collector.order(order[0]++).submitCustomGeometry(
                 poseStack,
-                RenderTypes.entityCutout(WIRE_ON),
+                RenderTypes.entityCutout(SEGMENT_DIGIT),
                 (pose, consumer) -> RenderGeometry.gatePanelLights(
                         consumer,
                         pose,
                         0x00F000F0,
                         attachment,
                         p.gateRotation,
-                        mask,
+                        signalMask,
+                        disableMask,
                         x / 16.0F,
                         z / 16.0F,
                         x < 8.0F,
-                        reflect
+                        reflect,
+                        onColor,
+                        offColor,
+                        disableColor
                 )
         );
     }
