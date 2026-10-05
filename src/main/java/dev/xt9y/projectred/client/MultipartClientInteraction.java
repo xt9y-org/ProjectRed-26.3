@@ -5,13 +5,13 @@ import dev.xt9y.projectred.multipart.MultipartBlockEntity;
 import dev.xt9y.projectred.multipart.Part;
 import dev.xt9y.projectred.network.MultipartBreakPayload;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
-import net.fabricmc.fabric.api.event.player.AttackBlockCallback;
 import net.fabricmc.fabric.api.event.client.player.ClientPickBlockGatherCallback;
+import net.fabricmc.fabric.api.event.player.AttackBlockCallback;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
 
 public final class MultipartClientInteraction {
     private static boolean initialized;
@@ -39,15 +39,14 @@ public final class MultipartClientInteraction {
                         return InteractionResult.PASS;
                     }
 
-                    // Tell the server which multipart is being mined, but
-                    // leave the vanilla attack untouched so normal mining
-                    // progress/hardness still applies. The server intercepts
-                    // the completed block break and removes only this slot.
-                    ClientPlayNetworking.send(new MultipartBreakPayload(pos, slot));
+                    ClientPlayNetworking.send(
+                            new MultipartBreakPayload(pos, slot)
+                    );
                     return player.isCreative()
                             ? InteractionResult.SUCCESS
                             : InteractionResult.PASS;
                 }
+        );
 
         ClientPickBlockGatherCallback.EVENT.register((player, result) -> {
             if (!(result instanceof BlockHitResult hit)
@@ -62,13 +61,10 @@ public final class MultipartClientInteraction {
 
             int slot = multipart.slotFromHit(hit.getLocation());
             Part part = multipart.part(slot);
-            if (part == null) {
-                return ItemStack.EMPTY;
-            }
-
-            return PRContent.stackFor(part);
+            return part == null
+                    ? ItemStack.EMPTY
+                    : PRContent.stackFor(part);
         });
-        );
     }
 
     private MultipartClientInteraction() {}
